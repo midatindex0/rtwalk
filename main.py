@@ -2,22 +2,20 @@ import dotenv
 
 dotenv.load_dotenv()
 
-from contextlib import asynccontextmanager
 import os
-from functools import cached_property
+from contextlib import asynccontextmanager
 
 import strawberry
-from strawberry.asgi import GraphQL
-from strawberry.fastapi import GraphQLRouter, BaseContext
-from fastapi import FastAPI, Depends
-from motor.motor_asyncio import AsyncIOMotorClient
-from beanie import init_beanie
-from argon2 import PasswordHasher
 from aiocache import Cache
 from aiocache.serializers import PickleSerializer
+from argon2 import PasswordHasher
+from beanie import init_beanie
+from fastapi import FastAPI
+from motor.motor_asyncio import AsyncIOMotorClient
+from strawberry.fastapi import BaseContext, GraphQLRouter
 
-from models.user import DBUser
 from gql import users
+from models.user import DBUser
 
 MAJOR_V = 0
 MINOR_v = 0

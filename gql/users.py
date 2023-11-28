@@ -2,14 +2,13 @@ import os
 import random
 from hmac import compare_digest
 
-from strawberry.types import Info
-from graphql.error import GraphQLError
-from zxcvbn import zxcvbn
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+from strawberry.types import Info
+from zxcvbn import zxcvbn
 
-from models.user import User, DBUser
 from error import UserCreationError, UsercReationErrorType
 from gql import Ok
+from models.user import DBUser, User
 
 DEV = os.getenv("DEV")
 
@@ -105,6 +104,7 @@ async def verify_user(username: str, code: int, info: Info) -> User:
     await info.context.pending.delete(username)
     await user.insert()
     return user.gql()
+
 
 async def login(email: str, password: str) -> None:
     pass

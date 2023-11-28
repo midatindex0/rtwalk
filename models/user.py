@@ -1,10 +1,9 @@
-from typing import Optional
 from time import time
+from typing import Optional
 
 import strawberry
 from beanie import Document, Indexed
-from pydantic import BaseModel, Field
-from opendal import AsyncOperator
+from pydantic import Field
 
 from models.file import File
 

@@ -1,10 +1,11 @@
 import os
 
 import strawberry
-from pydantic import BaseModel
 from opendal import AsyncOperator
+from pydantic import BaseModel
 
 CDN_PREFIX = os.getenv("CDN")
+
 
 @strawberry.type
 class File(BaseModel):

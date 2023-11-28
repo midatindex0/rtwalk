@@ -1,7 +1,7 @@
 from enum import Enum
 
-from graphql.error import GraphQLError
 import strawberry
+from graphql.error import GraphQLError
 
 
 @strawberry.enum
