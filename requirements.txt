@@ -1,0 +1,9 @@
+fastapi==0.104.1
+beanie==1.23.6
+strawberry-graphql[fastapi]==0.215.1
+argon2-cffi==23.1.0
+zxcvbn==4.4.28
+opendal==0.42.0
+python-dotenv==1.0.0
+fastapi-mail==1.4.1
+aiocache[redis]==0.12.2
