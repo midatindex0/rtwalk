@@ -31,6 +31,9 @@ if not DEV:
 
 
 async def create_user(username: str, email: str, password: str, info: Info) -> Ok:
+    """
+    Can fail: Check UserCreationErrorType for error types. Error extension is set as `tp`.
+    """
     r = zxcvbn(password, user_inputs=[username, email])
     if r["score"] < 3:
         raise UserCreationError(
@@ -55,7 +58,7 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
     if u:
         return Ok(msg="Check your email")
 
-    code = random.randint(1000, 9999)
+    code = random.randint(10000, 99999)
     user = DBUser(
         username=username,
         email=email,
@@ -79,7 +82,7 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
     return Ok(msg="Check your email")
 
 
-async def verify_user(username: str, code: int, info: Info) -> Ok:
+async def verify_user(username: str, code: int, info: Info) -> User:
     try:
         ccode, user, attempts = await info.context.pending.get(username)
     except:
@@ -99,6 +102,9 @@ async def verify_user(username: str, code: int, info: Info) -> Ok:
             f"Incorrect code",
             tp=UsercReationErrorType.INCORRECT_CODE,
         ).into()
-    await user.insert()
     await info.context.pending.delete(username)
-    return Ok(msg="Email verification successful")
+    await user.insert()
+    return user.gql()
+
+async def login(email: str, password: str) -> None:
+    pass

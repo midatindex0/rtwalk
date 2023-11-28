@@ -4,6 +4,7 @@ dotenv.load_dotenv()
 
 from contextlib import asynccontextmanager
 import os
+from functools import cached_property
 
 import strawberry
 from strawberry.asgi import GraphQL
