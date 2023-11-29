@@ -7,3 +7,5 @@ opendal==0.42.0
 python-dotenv==1.0.0
 fastapi-mail==1.4.1
 aiocache[redis]==0.12.2
+cryptography==41.0.7
+decorator==5.1.1

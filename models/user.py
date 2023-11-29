@@ -3,6 +3,7 @@ from typing import Optional
 
 import strawberry
 from beanie import Document, Indexed
+from beanie.odm.fields import PydanticObjectId
 from pydantic import Field
 
 from models.file import File
@@ -22,10 +23,15 @@ class User:
     bot: bool = False
 
 
+class UserSecret(Document):
+    user_id: PydanticObjectId | None = Field(default=None)
+    email_hash: Indexed(bytes, unique=True)
+    email: bytes
+    password: bytes
+
+
 class DBUser(Document):
     username: Indexed(str, unique=True)
-    email: Indexed(str, unique=True)
-    password: str
     display_name: str
     bio: Optional[File] = None
     pfp: Optional[File] = None
@@ -37,7 +43,7 @@ class DBUser(Document):
 
     def gql(self) -> User:
         return User(
-            id=self.id,
+            id=str(self.id),
             username=str(self.username),
             display_name=self.display_name,
             bio=self.bio,

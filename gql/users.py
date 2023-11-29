@@ -1,14 +1,19 @@
 import os
 import random
 from hmac import compare_digest
+from uuid import uuid4
 
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from strawberry.types import Info
 from zxcvbn import zxcvbn
+import argon2
+from cryptography.fernet import Fernet
+from beanie.odm.fields import PydanticObjectId
 
-from error import UserCreationError, UsercReationErrorType
+from error import UserCreationError, UsercReationErrorType, InvalidCredentials
 from gql import Ok
-from models.user import DBUser, User
+from models.user import DBUser, UserSecret, User
+from auth import authenticated
 
 DEV = os.getenv("DEV")
 
@@ -34,14 +39,14 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
     Can fail: Check UserCreationErrorType for error types. Error extension is set as `tp`.
     """
     r = zxcvbn(password, user_inputs=[username, email])
-    if r["score"] < 3:
+    if r["score"] < 4:
         raise UserCreationError(
             f"Password is too weak [{r['score']}/4]",
             tp=UsercReationErrorType.WEAK_PASSWORD,
         ).into()
-    if len(username) < 3:
+    if len(username) < 4:
         raise UserCreationError(
-            f"Username must be atlest 3 characters",
+            f"Username must be atlest 4 characters",
             tp=UsercReationErrorType.USERNAME_TOO_SHORT,
         ).into()
     # TODO: Check invalid character
@@ -52,20 +57,24 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
             tp=UsercReationErrorType.USERNAME_ALREADY_EXISTS,
         ).into()
 
+    # hash email
+    email_hash = info.context.email_hasher.derive(email.encode())
     # Silently drop if email exists
-    u = await DBUser.find_one(DBUser.email == email)
+    u = await UserSecret.find_one(UserSecret.email_hash == email_hash)
     if u:
         return Ok(msg="Check your email")
+    ect = info.context.email_cipher.encrypt(email.encode())
 
     code = random.randint(10000, 99999)
     user = DBUser(
         username=username,
-        email=email,
-        password=info.context.ph.hash(password),
         display_name=username,
     )
+    user_secret = UserSecret(
+        email=ect, email_hash=email_hash, password=info.context.argon2.hash(password)
+    )
 
-    await info.context.pending.set(username, [code, user, 0])
+    await info.context.pending.set(username, [code, user, user_secret, 0])
     if not DEV:
         message = MessageSchema(
             subject="Verify Your Email",
@@ -83,28 +92,65 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
 
 async def verify_user(username: str, code: int, info: Info) -> User:
     try:
-        ccode, user, attempts = await info.context.pending.get(username)
+        ccode, user, user_secret, attempts = await info.context.pending.get(username)
     except:
         raise UserCreationError(
             f"Your code expired. Register again",
             tp=UsercReationErrorType.CODE_EXPIRED,
         ).into()
     if attempts == 3:
-        del info.context.pending[username]
+        await info.context.pending.delete(username)
         raise UserCreationError(
             f"Your code expired. Register again",
             tp=UsercReationErrorType.CODE_EXPIRED,
         ).into()
     if not compare_digest(str(code), str(ccode)):
-        await info.context.pending.set(username, [code, user, attempts + 1])
+        await info.context.pending.set(
+            username, [code, user, user_secret, attempts + 1]
+        )
         raise UserCreationError(
             f"Incorrect code",
             tp=UsercReationErrorType.INCORRECT_CODE,
         ).into()
     await info.context.pending.delete(username)
     await user.insert()
+    user_secret.user_id = user.id
+    await user_secret.insert()
     return user.gql()
 
 
-async def login(email: str, password: str) -> None:
-    pass
+async def login(email: str, password: str, info: Info) -> User:
+    if await info.context.user():
+        return True
+    email_hash = info.context.email_hasher.derive(email.encode())
+    user_secret = await UserSecret.find_one(UserSecret.email_hash == email_hash)
+    if not user_secret:
+        raise InvalidCredentials().gql()
+    user_email = info.context.email_cipher.decrypt(user_secret.email).decode()
+    if not compare_digest(user_email, email):
+        raise InvalidCredentials().gql()
+    try:
+        if info.context.argon2.verify(user_secret.password, password):
+            user = await DBUser.find_one(DBUser.id == user_secret.user_id)
+            uuid = uuid4()
+            nonce = os.urandom(12)
+            cookie = f"{info.context.session_cipher.encrypt(nonce, str(uuid).encode(), None).hex()};{nonce.hex()}"
+            await info.context.session.set(str(uuid), user.gql().__dict__)
+            info.context.response.set_cookie(key="session", value=cookie)
+            return user
+    except argon2.exceptions.VerifyMismatchError:
+        raise InvalidCredentials().gql()
+
+
+@authenticated
+async def me(info: Info) -> User:
+    return await info.context.user()
+
+
+async def get_user(id: str | None = None, username: str | None = None) -> User | None:
+    if id:
+        user = await DBUser.find_one(DBUser.id == PydanticObjectId(id))
+        return user.gql() if user else None
+    if username:
+        user = await DBUser.find_one(DBUser.username == username)
+        return user.gql() if user else None

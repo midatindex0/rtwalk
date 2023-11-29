@@ -22,3 +22,14 @@ class UserCreationError(Exception):
 
     def into(self) -> GraphQLError:
         return GraphQLError(self.msg, extensions={"tp": self.tp.name})
+
+
+@strawberry.type
+class InvalidCredentials(Exception):
+    def __init__(self):
+        super().__init__()
+
+    def gql(self) -> GraphQLError:
+        return GraphQLError(
+            "Invalid credentials", extensions={"tp": "INVALID_CREDENTIALS"}
+        )
