@@ -3,17 +3,16 @@ import random
 from hmac import compare_digest
 from uuid import uuid4
 
+import argon2
+from beanie.odm.fields import PydanticObjectId
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from strawberry.types import Info
 from zxcvbn import zxcvbn
-import argon2
-from cryptography.fernet import Fernet
-from beanie.odm.fields import PydanticObjectId
 
-from error import UserCreationError, UsercReationErrorType, InvalidCredentials
-from gql import Ok
-from models.user import DBUser, UserSecret, User
 from auth import authenticated
+from error import InvalidCredentials, UserCreationError, UsercReationErrorType
+from gql import Ok
+from models.user import DBUser, User, UserSecret
 
 DEV = os.getenv("DEV")
 

@@ -1,6 +1,7 @@
 import decorator
-from strawberry.types import Info
 from graphql.error import GraphQLError
+from strawberry.types import Info
+
 
 @decorator.decorator
 async def authenticated(fn, info: Info):

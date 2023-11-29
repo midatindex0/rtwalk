@@ -10,12 +10,12 @@ from aiocache import Cache
 from aiocache.serializers import PickleSerializer
 from argon2 import PasswordHasher
 from beanie import init_beanie
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
-from cryptography.fernet import Fernet, InvalidToken
-from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
 from gql import users
 from models.user import DBUser, User, UserSecret
@@ -66,8 +66,8 @@ class Ctx(BaseContext):
         try:
             token, nonce = session_token.split(";")
             uuid = self.session_cipher.decrypt(
-                    bytes.fromhex(nonce), bytes.fromhex(token), None
-                ).decode()
+                bytes.fromhex(nonce), bytes.fromhex(token), None
+            ).decode()
             user = User(**(await self.session.get(uuid)))
         except:
             return None
@@ -94,7 +94,6 @@ class Version:
 class Query:
     me = strawberry.field(resolver=users.me)
     get_user = strawberry.field(resolver=users.get_user)
-
 
     @strawberry.field
     def version(self) -> Version:
