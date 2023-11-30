@@ -33,3 +33,15 @@ class InvalidCredentials(Exception):
         return GraphQLError(
             "Invalid credentials", extensions={"tp": "INVALID_CREDENTIALS"}
         )
+
+
+@strawberry.type
+class InvalidGetQuery(Exception):
+    def __init__(self):
+        super().__init__()
+
+    def gql(self) -> GraphQLError:
+        return GraphQLError(
+            "Invalid get query field input",
+            extensions={"tp": "INVALID_GET_QUERY_INPUTS"},
+        )

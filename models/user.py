@@ -40,6 +40,7 @@ class DBUser(Document):
     modified_at: int = Field(default_factory=lambda: int(time()))
     admin: bool = False
     bot: bool = False
+    bot_owner: Optional[PydanticObjectId] = None
 
     def gql(self) -> User:
         return User(

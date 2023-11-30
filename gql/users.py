@@ -2,16 +2,26 @@ import os
 import random
 from hmac import compare_digest
 from uuid import uuid4
+from functools import cached_property
+from typing import List, Optional
 
 import argon2
 from beanie.odm.fields import PydanticObjectId
+from beanie.operators import In
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from strawberry.types import Info
 from zxcvbn import zxcvbn
+from aiocache import cached, Cache
+from aiocache.serializers import PickleSerializer
 
 from auth import authenticated
-from error import InvalidCredentials, UserCreationError, UsercReationErrorType
-from gql import Ok
+from error import (
+    InvalidCredentials,
+    UserCreationError,
+    UsercReationErrorType,
+    InvalidGetQuery,
+)
+from gql import Ok, UserSort, Page
 from models.user import DBUser, User, UserSecret
 
 DEV = os.getenv("DEV")
@@ -146,6 +156,14 @@ async def me(info: Info) -> User:
     return await info.context.user()
 
 
+@cached(
+    ttl=30,
+    cache=Cache.REDIS,
+    key="get_user",
+    serializer=PickleSerializer(),
+    port=6379,
+    namespace="fn_cache",
+)
 async def get_user(id: str | None = None, username: str | None = None) -> User | None:
     if id:
         user = await DBUser.find_one(DBUser.id == PydanticObjectId(id))
@@ -153,3 +171,80 @@ async def get_user(id: str | None = None, username: str | None = None) -> User |
     if username:
         user = await DBUser.find_one(DBUser.username == username)
         return user.gql() if user else None
+
+
+@cached(
+    ttl=10,
+    cache=Cache.REDIS,
+    key="get_users",
+    serializer=PickleSerializer(),
+    port=6379,
+    namespace="fn_cache",
+)
+async def get_users(
+    info: Info,
+    ids: None | List[str] = None,
+    usernames: None | List[str] = None,
+    search: str | None = None,
+    bot: bool | None = None,
+    admin: bool | None = None,
+    created_after: int | None = None,
+    created_before: int | None = None,
+    sort: UserSort | None = None,
+    page: int = 1,
+    limit: int = 10,
+) -> Page[User]:
+    if ids:
+        ids = [*map(PydanticObjectId, ids)]
+        users = DBUser.find(In(DBUser.id, ids))
+    elif usernames:
+        users = DBUser.find(In(DBUser.username, usernames))
+    elif search:
+        users = DBUser.find_all().aggregate(
+            [
+                {
+                    "$search": {
+                        "index": "users",
+                        "text": {
+                            "query": search,
+                            "path": ["username", "display_name", "bio"],
+                            "fuzzy": {},
+                        },
+                    }
+                }
+            ],
+            projection_model=DBUser,
+        )
+    else:
+        users = DBUser.find_all()
+    if isinstance(bot, bool):
+        users.find(DBUser.bot == bot)
+    if isinstance(admin, bool):
+        users.find(DBUser.admin == admin)
+    if created_after:
+        users.find(DBUser.created_at > created_after)
+    if created_before:
+        users.find(DBUser.created_at < created_before)
+    if sort:
+        match sort:
+            case UserSort.CREATED_AT_ASC:
+                users.sort(+DBUser.created_at)
+            case UserSort.CREATED_AT_DESC:
+                users.sort(-DBUser.created_at)
+    total = 0
+    for selection in info.selected_fields:
+        if selection.name == "getUsers":
+            for field in selection.selections:
+                if field.name == "total":
+                    total = await users.count()
+                    break
+
+    limit = min(20, limit)
+    users.skip(limit * (page - 1)).limit(limit)
+    users = await users.to_list()
+
+    return Page(
+        total=total,
+        next_page=page + 1 if len(users) == limit else None,
+        items=[*map(DBUser.gql, users)],
+    )
