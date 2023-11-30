@@ -1,27 +1,21 @@
 import os
 import random
 from hmac import compare_digest
+from typing import List
 from uuid import uuid4
-from functools import cached_property
-from typing import List, Optional
 
 import argon2
+from aiocache import Cache, cached
+from aiocache.serializers import PickleSerializer
 from beanie.odm.fields import PydanticObjectId
 from beanie.operators import In
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from strawberry.types import Info
 from zxcvbn import zxcvbn
-from aiocache import cached, Cache
-from aiocache.serializers import PickleSerializer
 
 from auth import authenticated
-from error import (
-    InvalidCredentials,
-    UserCreationError,
-    UsercReationErrorType,
-    InvalidGetQuery,
-)
-from gql import Ok, UserSort, Page
+from error import (InvalidCredentials, UserCreationError, UsercReationErrorType)
+from gql import Ok, Page, UserSort
 from models.user import DBUser, User, UserSecret
 
 DEV = os.getenv("DEV")
