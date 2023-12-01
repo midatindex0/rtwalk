@@ -15,6 +15,11 @@ class UserSort(Enum):
     CREATED_AT_DESC = 0
 
 
+@strawberry.type
+class BotCreds:
+    token: str
+
+
 T = TypeVar("T")
 
 

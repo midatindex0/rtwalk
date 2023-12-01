@@ -7,10 +7,12 @@ from graphql.error import GraphQLError
 @strawberry.enum
 class UsercReationErrorType(Enum):
     WEAK_PASSWORD = "WEAK_PASSOWRD"
-    USERNAME_TOO_SHORT = "USERNAME_TOO_SHORT"
+    INVALID_USERNAME = "USERNAME_TOO_SHORT"
     USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"
     INCORRECT_CODE = 3
     CODE_EXPIRED = 4
+    UNSATISFIED_REQUIREMENTS = 5
+    INVALID_EMAIL = 6
 
 
 @strawberry.type

@@ -104,6 +104,7 @@ class Query:
 @strawberry.type
 class Mutation:
     create_user = strawberry.field(resolver=users.create_user)
+    create_bot = strawberry.field(resolver=users.create_bot)
     verify_user = strawberry.field(resolver=users.verify_user)
     login = strawberry.field(resolver=users.login)
 

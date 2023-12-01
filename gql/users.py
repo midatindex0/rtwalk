@@ -3,6 +3,9 @@ import random
 from hmac import compare_digest
 from typing import List
 from uuid import uuid4
+import secrets
+import string
+import re
 
 import argon2
 from aiocache import Cache, cached
@@ -14,8 +17,8 @@ from strawberry.types import Info
 from zxcvbn import zxcvbn
 
 from auth import authenticated
-from error import (InvalidCredentials, UserCreationError, UsercReationErrorType)
-from gql import Ok, Page, UserSort
+from error import InvalidCredentials, UserCreationError, UsercReationErrorType
+from gql import Ok, Page, UserSort, BotCreds
 from models.user import DBUser, User, UserSecret
 
 DEV = os.getenv("DEV")
@@ -36,23 +39,35 @@ if not DEV:
         VALIDATE_CERTS=True,
     )
 
+email_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
+username_regex = r"^(?=.*[a-z])[a-z0-9_]+$"
+
 
 async def create_user(username: str, email: str, password: str, info: Info) -> Ok:
     """
     Can fail: Check UserCreationErrorType for error types. Error extension is set as `tp`.
     """
+    if not re.match(username_regex, username):
+        raise UserCreationError(
+            f"Username can only have letters, numbers and underscore",
+            tp=UsercReationErrorType.INVALID_USERNAME,
+        ).into()
+    if len(username) < 4:
+        raise UserCreationError(
+            f"Username must be atlest 4 characters",
+            tp=UsercReationErrorType.INVALID_USERNAME,
+        ).into()
+    if not re.fullmatch(regex, email):
+        raise UserCreationError(
+            f"Invalid email address",
+            tp=UsercReationErrorType.INVALID_EMAIL,
+        ).into()
     r = zxcvbn(password, user_inputs=[username, email])
     if r["score"] < 4:
         raise UserCreationError(
             f"Password is too weak [{r['score']}/4]",
             tp=UsercReationErrorType.WEAK_PASSWORD,
         ).into()
-    if len(username) < 4:
-        raise UserCreationError(
-            f"Username must be atlest 4 characters",
-            tp=UsercReationErrorType.USERNAME_TOO_SHORT,
-        ).into()
-    # TODO: Check invalid character
     u = await DBUser.find_one(DBUser.username == username)
     if u:
         raise UserCreationError(
@@ -74,7 +89,11 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
         display_name=username,
     )
     user_secret = UserSecret(
-        email=ect, email_hash=email_hash, password=info.context.argon2.hash(password)
+        email=ect,
+        email_hash=email_hash,
+        password=info.context.email_cipher.encrypt(
+            info.context.argon2.hash(password).encode()
+        ),
     )
 
     await info.context.pending.set(username, [code, user, user_secret, 0])
@@ -91,6 +110,49 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
         return Ok(msg=f"{code}")
 
     return Ok(msg="Check your email")
+
+
+alphabet = (string.ascii_letters + string.digits + string.punctuation).replace("@", "")
+
+
+@authenticated
+async def create_bot(info: Info, username: str) -> BotCreds:
+    owner = await info.context.user()
+    if owner.bot:
+        raise UserCreationError(
+            f"Bot cannot create a bot account",
+            tp=UsercReationErrorType.UNSATISFIED_REQUIREMENTS,
+        ).into()
+    if len(username) < 4:
+        raise UserCreationError(
+            f"Username must be atlest 4 characters",
+            tp=UsercReationErrorType.USERNAME_TOO_SHORT,
+        ).into()
+    # TODO: Check invalid character
+    u = await DBUser.find_one(DBUser.username == username)
+    if u:
+        raise UserCreationError(
+            f"Username already exists",
+            tp=UsercReationErrorType.USERNAME_ALREADY_EXISTS,
+        ).into()
+
+    email = str(PydanticObjectId())
+    password = "".join(secrets.choice(alphabet) for i in range(20))
+    ect = info.context.email_cipher.encrypt(email.encode())
+    email_hash = info.context.email_hasher.derive(email.encode())
+
+    bot = DBUser(username=username, display_name=username, bot=True, bot_owner=owner.id)
+    await bot.insert()
+    user_secret = UserSecret(
+        email=ect,
+        email_hash=email_hash,
+        password=info.context.email_cipher.encrypt(
+            info.context.argon2.hash(password).encode()
+        ),
+        user_id=bot.id,
+    )
+    await user_secret.insert()
+    return BotCreds(token=f"{email}@{password}")
 
 
 async def verify_user(username: str, code: int, info: Info) -> User:
@@ -123,8 +185,9 @@ async def verify_user(username: str, code: int, info: Info) -> User:
 
 
 async def login(email: str, password: str, info: Info) -> User:
-    if await info.context.user():
-        return True
+    u = await info.context.user()
+    if u:
+        return u
     email_hash = info.context.email_hasher.derive(email.encode())
     user_secret = await UserSecret.find_one(UserSecret.email_hash == email_hash)
     if not user_secret:
@@ -133,7 +196,9 @@ async def login(email: str, password: str, info: Info) -> User:
     if not compare_digest(user_email, email):
         raise InvalidCredentials().gql()
     try:
-        if info.context.argon2.verify(user_secret.password, password):
+        if info.context.argon2.verify(
+            info.context.email_cipher.decrypt(user_secret.password), password
+        ):
             user = await DBUser.find_one(DBUser.id == user_secret.user_id)
             uuid = uuid4()
             nonce = os.urandom(12)
