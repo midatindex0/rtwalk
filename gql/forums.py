@@ -1,8 +1,7 @@
 from slugify import slugify
 
 from auth import authenticated
-from error import ForumCreationErrorType, ForumCreationError
-from gql import Ok, Page, UserSort, BotCreds
+from error import ForumCreationError, ForumCreationErrorType
 from models.forum import DBForum, Forum
 
 

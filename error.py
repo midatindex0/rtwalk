@@ -48,6 +48,7 @@ class InvalidGetQuery(Exception):
             extensions={"tp": "INVALID_GET_QUERY_INPUTS"},
         )
 
+
 @strawberry.enum
 class ForumCreationErrorType(Enum):
     INVALID_NAME = 0
