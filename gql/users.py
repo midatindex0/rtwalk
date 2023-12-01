@@ -17,7 +17,7 @@ from strawberry.types import Info
 from zxcvbn import zxcvbn
 
 from auth import authenticated
-from error import InvalidCredentials, UserCreationError, UsercReationErrorType
+from error import InvalidCredentials, UserCreationError, UserCreationErrorType
 from gql import Ok, Page, UserSort, BotCreds
 from models.user import DBUser, User, UserSecret
 
@@ -49,30 +49,30 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
     """
     if not re.match(username_regex, username):
         raise UserCreationError(
-            f"Username can only have letters, numbers and underscore",
-            tp=UsercReationErrorType.INVALID_USERNAME,
+            f"Username can only have lower case letters, numbers and underscore",
+            tp=UserCreationErrorType.INVALID_USERNAME,
         ).into()
     if len(username) < 4:
         raise UserCreationError(
             f"Username must be atlest 4 characters",
-            tp=UsercReationErrorType.INVALID_USERNAME,
+            tp=UserCreationErrorType.INVALID_USERNAME,
         ).into()
-    if not re.fullmatch(regex, email):
+    if not re.fullmatch(email_regex, email):
         raise UserCreationError(
             f"Invalid email address",
-            tp=UsercReationErrorType.INVALID_EMAIL,
+            tp=UserCreationErrorType.INVALID_EMAIL,
         ).into()
     r = zxcvbn(password, user_inputs=[username, email])
     if r["score"] < 4:
         raise UserCreationError(
             f"Password is too weak [{r['score']}/4]",
-            tp=UsercReationErrorType.WEAK_PASSWORD,
+            tp=UserCreationErrorType.WEAK_PASSWORD,
         ).into()
     u = await DBUser.find_one(DBUser.username == username)
     if u:
         raise UserCreationError(
             f"Username already exists",
-            tp=UsercReationErrorType.USERNAME_ALREADY_EXISTS,
+            tp=UserCreationErrorType.USERNAME_ALREADY_EXISTS,
         ).into()
 
     # hash email
@@ -115,25 +115,29 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
 alphabet = (string.ascii_letters + string.digits + string.punctuation).replace("@", "")
 
 
-@authenticated
+@authenticated(bot=False)
 async def create_bot(info: Info, username: str) -> BotCreds:
-    owner = await info.context.user()
-    if owner.bot:
+    if not re.match(username_regex, username):
         raise UserCreationError(
-            f"Bot cannot create a bot account",
-            tp=UsercReationErrorType.UNSATISFIED_REQUIREMENTS,
+            f"Username can only have lower case letters, numbers and underscore",
+            tp=UserCreationErrorType.INVALID_USERNAME,
         ).into()
     if len(username) < 4:
         raise UserCreationError(
             f"Username must be atlest 4 characters",
-            tp=UsercReationErrorType.USERNAME_TOO_SHORT,
+            tp=UserCreationErrorType.INVALID_USERNAME,
+        ).into()
+    if len(username) < 4:
+        raise UserCreationError(
+            f"Username must be atlest 4 characters",
+            tp=UserCreationErrorType.USERNAME_TOO_SHORT,
         ).into()
     # TODO: Check invalid character
     u = await DBUser.find_one(DBUser.username == username)
     if u:
         raise UserCreationError(
             f"Username already exists",
-            tp=UsercReationErrorType.USERNAME_ALREADY_EXISTS,
+            tp=UserCreationErrorType.USERNAME_ALREADY_EXISTS,
         ).into()
 
     email = str(PydanticObjectId())
@@ -161,13 +165,13 @@ async def verify_user(username: str, code: int, info: Info) -> User:
     except:
         raise UserCreationError(
             f"Your code expired. Register again",
-            tp=UsercReationErrorType.CODE_EXPIRED,
+            tp=UserCreationErrorType.CODE_EXPIRED,
         ).into()
     if attempts == 3:
         await info.context.pending.delete(username)
         raise UserCreationError(
             f"Your code expired. Register again",
-            tp=UsercReationErrorType.CODE_EXPIRED,
+            tp=UserCreationErrorType.CODE_EXPIRED,
         ).into()
     if not compare_digest(str(code), str(ccode)):
         await info.context.pending.set(
@@ -175,7 +179,7 @@ async def verify_user(username: str, code: int, info: Info) -> User:
         )
         raise UserCreationError(
             f"Incorrect code",
-            tp=UsercReationErrorType.INCORRECT_CODE,
+            tp=UserCreationErrorType.INCORRECT_CODE,
         ).into()
     await info.context.pending.delete(username)
     await user.insert()
@@ -210,7 +214,7 @@ async def login(email: str, password: str, info: Info) -> User:
         raise InvalidCredentials().gql()
 
 
-@authenticated
+@authenticated()
 async def me(info: Info) -> User:
     return await info.context.user()
 

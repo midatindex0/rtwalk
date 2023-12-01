@@ -5,7 +5,7 @@ from graphql.error import GraphQLError
 
 
 @strawberry.enum
-class UsercReationErrorType(Enum):
+class UserCreationErrorType(Enum):
     WEAK_PASSWORD = "WEAK_PASSOWRD"
     INVALID_USERNAME = "USERNAME_TOO_SHORT"
     USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"
@@ -47,3 +47,19 @@ class InvalidGetQuery(Exception):
             "Invalid get query field input",
             extensions={"tp": "INVALID_GET_QUERY_INPUTS"},
         )
+
+@strawberry.enum
+class ForumCreationErrorType(Enum):
+    INVALID_NAME = 0
+    FORUM_ALREADY_EXISTS = 1
+
+
+@strawberry.type
+class ForumCreationError(Exception):
+    def __init__(self, *args, tp: UsercReationErrorType):
+        super().__init__(*args)
+        self.msg = args[0]
+        self.tp = tp
+
+    def into(self) -> GraphQLError:
+        return GraphQLError(self.msg, extensions={"tp": self.tp.name})

@@ -14,11 +14,13 @@ class User:
     id: str
     username: str
     display_name: str
-    bio: Optional[File] = None
+    bio: Optional[str] = None
     pfp: Optional[File] = None
-    banner: Optional[str] = None
-    created_at: int = Field(default_factory=lambda: int(time()))
-    modified_at: int = Field(default_factory=lambda: int(time()))
+    banner: Optional[File] = None
+    stars: int = 0
+    starred_by: List[str] = []
+    created_at: int
+    modified_at: int
     admin: bool = False
     bot: bool = False
 
@@ -33,9 +35,11 @@ class UserSecret(Document):
 class DBUser(Document):
     username: Indexed(str, unique=True)
     display_name: str
-    bio: Optional[File] = None
+    bio: Optional[str] = None
     pfp: Optional[File] = None
-    banner: Optional[str] = None
+    banner: Optional[File] = None
+    stars: int = 0
+    starred_by: List[PydanticObjectId] = []
     created_at: int = Field(default_factory=lambda: int(time()))
     modified_at: int = Field(default_factory=lambda: int(time()))
     admin: bool = False

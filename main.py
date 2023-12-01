@@ -42,9 +42,6 @@ session = Cache(
 )
 email_cipher = Fernet(os.getenv("EMAIL_CIPHER_KEY").encode())
 session_cipher = ChaCha20Poly1305(bytes.fromhex(os.getenv("AUTH_KEY")))
-scrypt = Scrypt(
-    salt=os.getenv("EMAIL_HASH_SALT").encode(), length=32, n=2**14, r=8, p=1
-)
 
 
 class Ctx(BaseContext):
@@ -54,7 +51,9 @@ class Ctx(BaseContext):
         self.session = session
         self.email_cipher = email_cipher
         self.session_cipher = session_cipher
-        self.email_hasher = scrypt
+        self.email_hasher = scrypt = Scrypt(
+            salt=os.getenv("EMAIL_HASH_SALT").encode(), length=32, n=2**14, r=8, p=1
+        )
 
     async def user(self) -> User | None:
         if not self.request:
@@ -121,4 +120,4 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(graphql_app, prefix="/graphql")
+app.include_router(graphql_app, prefix="/api/v1")
