@@ -1,11 +1,11 @@
 import os
 import random
+import re
+import secrets
+import string
 from hmac import compare_digest
 from typing import List
 from uuid import uuid4
-import secrets
-import string
-import re
 
 import argon2
 from aiocache import Cache, cached
@@ -18,7 +18,7 @@ from zxcvbn import zxcvbn
 
 from auth import authenticated
 from error import InvalidCredentials, UserCreationError, UsercReationErrorType
-from gql import Ok, Page, UserSort, BotCreds
+from gql import BotCreds, Ok, Page, UserSort
 from models.user import DBUser, User, UserSecret
 
 DEV = os.getenv("DEV")
