@@ -5,8 +5,8 @@ from strawberry.types import Info
 
 from auth import authenticated
 from error import ForumCreationError, ForumCreationErrorType
-from models.forum import DBForum, Forum
 from gql import ForumSort, Page
+from models.forum import DBForum, Forum
 
 
 @authenticated(bot=False)
