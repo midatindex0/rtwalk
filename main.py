@@ -17,8 +17,9 @@ from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
-from gql import users
+from gql import users, forums
 from models.user import DBUser, User, UserSecret
+from models.forum import DBForum
 
 MAJOR_V = 0
 MINOR_v = 0
@@ -106,6 +107,7 @@ class Mutation:
     create_bot = strawberry.field(resolver=users.create_bot)
     verify_user = strawberry.field(resolver=users.verify_user)
     login = strawberry.field(resolver=users.login)
+    create_forum = strawberry.field(resolver=forums.create_forum)
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
@@ -115,7 +117,7 @@ graphql_app = GraphQLRouter(schema, context_getter=lambda: Ctx())
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(os.getenv("DB_URL"))
-    await init_beanie(database=client.rtwalk_py, document_models=[DBUser, UserSecret])
+    await init_beanie(database=client.rtwalk_py, document_models=[DBUser, UserSecret, DBForum])
     yield
 
 

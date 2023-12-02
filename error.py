@@ -17,7 +17,7 @@ class UserCreationErrorType(Enum):
 
 @strawberry.type
 class UserCreationError(Exception):
-    def __init__(self, *args, tp: UsercReationErrorType):
+    def __init__(self, *args, tp: UserCreationErrorType):
         super().__init__(*args)
         self.msg = args[0]
         self.tp = tp
@@ -56,7 +56,7 @@ class ForumCreationErrorType(Enum):
 
 @strawberry.type
 class ForumCreationError(Exception):
-    def __init__(self, *args, tp: UsercReationErrorType):
+    def __init__(self, *args, tp: ForumCreationErrorType):
         super().__init__(*args)
         self.msg = args[0]
         self.tp = tp

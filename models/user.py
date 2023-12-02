@@ -1,5 +1,5 @@
 from time import time
-from typing import Optional
+from typing import Optional, List
 
 import strawberry
 from beanie import Document, Indexed
@@ -18,7 +18,7 @@ class User:
     pfp: Optional[File] = None
     banner: Optional[File] = None
     stars: int = 0
-    starred_by: List[str] = []
+    starred_by: List[str]
     created_at: int
     modified_at: int
     admin: bool = False
@@ -54,6 +54,8 @@ class DBUser(Document):
             bio=self.bio,
             pfp=self.pfp,
             banner=self.banner,
+            stars=self.stars,
+            starred_by=self.starred_by,
             created_at=self.created_at,
             modified_at=self.modified_at,
             admin=self.admin,

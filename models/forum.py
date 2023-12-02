@@ -1,5 +1,5 @@
 from time import time
-from typing import Optional
+from typing import Optional, List
 
 import strawberry
 from beanie import Document, Indexed
@@ -30,8 +30,8 @@ class DBComment(Document):
     modified_at: int = Field(default_factory=lambda: int(time()))
     upvotes: int = 0
     downvotes: int = 0
-    upvoted_by: List[PydanticObjectId] = []
-    downvoted_by: List[PydanticObjectId] = []
+    upvoted_by: List[PydanticObjectId] = Field(default=[])
+    downvoted_by: List[PydanticObjectId] = Field(default=[])
 
 
 class DBPost(Document):
@@ -44,9 +44,9 @@ class DBPost(Document):
     poster_id: PydanticObjectId
     upvotes: int = 0
     downvotes: int = 0
-    upvoted_by: List[PydanticObjectId] = []
-    downvoted_by: List[PydanticObjectId] = []
-    comments: List[DBComment] = []
+    upvoted_by: List[PydanticObjectId] = Field(default=[])
+    downvoted_by: List[PydanticObjectId] = Field(default=[])
+    comments: List[DBComment] = Field(default=[])
 
 
 class DBForum(Document):
@@ -58,7 +58,9 @@ class DBForum(Document):
     created_at: int = Field(default_factory=lambda: int(time()))
     modified_at: int = Field(default_factory=lambda: int(time()))
     owner_id: PydanticObjectId
-    posts: List[DBPost] = []
+    moderators: List[PydanticObjectId] = Field(default=[])
+    banned_members: List[PydanticObjectId] = Field(default=[])
+    posts: List[DBPost] = Field(default=[])
 
     def gql(self) -> Forum:
         return Forum(
