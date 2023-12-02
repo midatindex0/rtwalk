@@ -53,7 +53,7 @@ class DBPost(Document):
             tags=self.tags,
             content=self.content,
             attachments=self.attachments,
-            comment_count=comment_count,
+            comment_count=self.comment_count,
             participants=list(map(str, self.participants)),
             created_at=self.created_at,
             modified_at=self.modified_at,

@@ -18,7 +18,16 @@ class UserSort(Enum):
 @strawberry.enum
 class ForumSort(Enum):
     CREATED_AT_ASC = 0
-    CREATED_AT_DESC = 0
+    CREATED_AT_DESC = 1
+
+
+@strawberry.enum
+class PostSort(Enum):
+    CREATED_AT_ASC = 0
+    CREATED_AT_DESC = 1
+    PINNED = 2
+    UPVOTES = 3
+    DOWNVOTES = 4
 
 
 @strawberry.type
