@@ -9,3 +9,4 @@ fastapi-mail==1.4.1
 aiocache[redis]==0.12.2
 cryptography==41.0.7
 python-slugify==8.0.1
+uvicorn

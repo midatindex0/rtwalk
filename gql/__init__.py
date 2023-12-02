@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Generic, List, TypeVar
+from typing import Generic, List, TypeVar, Optional
 
 import strawberry
 
@@ -32,5 +32,5 @@ T = TypeVar("T")
 @strawberry.type
 class Page(Generic[T]):
     total: int
-    next_page: int | None
+    next_page: Optional[int]
     items: List[T]

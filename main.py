@@ -4,6 +4,7 @@ dotenv.load_dotenv()
 
 import os
 from contextlib import asynccontextmanager
+from typing import Optional
 
 import strawberry
 from aiocache import Cache
@@ -30,16 +31,16 @@ BUG_FIX_V = 0
 ph = PasswordHasher()
 pending = Cache(
     Cache.REDIS,
-    endpoint="127.0.0.1",
+    endpoint=os.getenv("REDIS_ENDPOINT"),
     serializer=PickleSerializer(),
-    port=6379,
+    port=int(os.getenv("REDIS_PORT")),
     namespace="email_verify",
     ttl=10 * 60,
 )
 session = Cache(
     Cache.REDIS,
-    endpoint="127.0.0.1",
-    port=6379,
+    endpoint=os.getenv("REDIS_ENDPOINT"),
+    port=int(os.getenv("REDIS_PORT")),
     namespace="auth_session",
     ttl=15 * 24 * 60 * 60,
 )
@@ -59,7 +60,7 @@ class Ctx(BaseContext):
         )
         self.session_user = None
 
-    async def user(self) -> User | None:
+    async def user(self) -> Optional[User]:
         if not self.request:
             return None
 
@@ -136,3 +137,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(graphql_app, prefix="/api/v1")
+
+import uvicorn
+
+if __name__ == "__main__":
+    port = int(getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, workers=4)

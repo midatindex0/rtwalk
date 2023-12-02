@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from beanie.odm.fields import PydanticObjectId
 from slugify import slugify
@@ -34,7 +34,9 @@ async def create_forum(info: Info, name: str) -> Forum:
     ).gql()
 
 
-async def get_forum(id: str | None = None, name: str | None = None) -> Forum | None:
+async def get_forum(
+    id: Optional[str] = None, name: Optional[str] = None
+) -> Optional[Forum]:
     if id:
         forum = await DBForum.find_one(DBForum.id == PydanticObjectId(id))
         return forum.gql() if forum else None
@@ -45,14 +47,14 @@ async def get_forum(id: str | None = None, name: str | None = None) -> Forum | N
 
 async def get_forums(
     info: Info,
-    ids: None | List[str] = None,
-    owner_id: str | None = None,
-    names: None | List[str] = None,
-    search: str | None = None,
-    locked: bool | None = None,
-    created_after: int | None = None,
-    created_before: int | None = None,
-    sort: ForumSort | None = None,
+    ids: Optional[List[str]] = None,
+    owner_id: Optional[str] = None,
+    names: Optional[List[str]] = None,
+    search: Optional[str] = None,
+    locked: Optional[bool] = None,
+    created_after: Optional[int] = None,
+    created_before: Optional[int] = None,
+    sort: Optional[ForumSort] = None,
     page: int = 1,
     limit: int = 10,
 ) -> Page[Forum]:
@@ -88,11 +90,10 @@ async def get_forums(
     if created_before:
         forums.find(DBForum.created_at < created_before)
     if sort:
-        match sort:
-            case ForumSort.CREATED_AT_ASC:
-                forums.sort(+DBForum.created_at)
-            case ForumSort.CREATED_AT_DESC:
-                forums.sort(-DBForum.created_at)
+        if sort == ForumSort.CREATED_AT_ASC:
+            forums.sort(+DBForum.created_at)
+        elif sort == ForumSort.CREATED_AT_DESC:
+            forums.sort(-DBForum.created_at)
     total = 0
     for selection in info.selected_fields:
         if selection.name == "getForums":

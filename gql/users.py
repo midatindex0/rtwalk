@@ -4,7 +4,7 @@ import re
 import secrets
 import string
 from hmac import compare_digest
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 
 import argon2
@@ -219,15 +219,10 @@ async def me(info: Info) -> User:
     return await info.context.user()
 
 
-@cached(
-    ttl=30,
-    cache=Cache.REDIS,
-    key="get_user",
-    serializer=PickleSerializer(),
-    port=6379,
-    namespace="fn_cache",
-)
-async def get_user(id: str | None = None, username: str | None = None) -> User | None:
+# @cache Maybe cache
+async def get_user(
+    id: Optional[str] = None, username: Optional[str] = None
+) -> Optional[User]:
     if id:
         user = await DBUser.find_one(DBUser.id == PydanticObjectId(id))
         return user.gql() if user else None
@@ -236,24 +231,17 @@ async def get_user(id: str | None = None, username: str | None = None) -> User |
         return user.gql() if user else None
 
 
-@cached(
-    ttl=10,
-    cache=Cache.REDIS,
-    key="get_users",
-    serializer=PickleSerializer(),
-    port=6379,
-    namespace="fn_cache",
-)
+# @cache Maybe cache
 async def get_users(
     info: Info,
-    ids: None | List[str] = None,
-    usernames: None | List[str] = None,
-    search: str | None = None,
-    bot: bool | None = None,
-    admin: bool | None = None,
-    created_after: int | None = None,
-    created_before: int | None = None,
-    sort: UserSort | None = None,
+    ids: Optional[List[str]] = None,
+    usernames: Optional[List[str]] = None,
+    search: Optional[str] = None,
+    bot: Optional[bool] = None,
+    admin: Optional[bool] = None,
+    created_after: Optional[int] = None,
+    created_before: Optional[int] = None,
+    sort: Optional[UserSort] = None,
     page: int = 1,
     limit: int = 10,
 ) -> Page[User]:
@@ -289,11 +277,10 @@ async def get_users(
     if created_before:
         users.find(DBUser.created_at < created_before)
     if sort:
-        match sort:
-            case UserSort.CREATED_AT_ASC:
-                users.sort(+DBUser.created_at)
-            case UserSort.CREATED_AT_DESC:
-                users.sort(-DBUser.created_at)
+        if sort == UserSort.CREATED_AT_ASC:
+            users.sort(+DBUser.created_at)
+        elif seor == UserSort.CREATED_AT_DESC:
+            users.sort(-DBUser.created_at)
     total = 0
     for selection in info.selected_fields:
         if selection.name == "getUsers":

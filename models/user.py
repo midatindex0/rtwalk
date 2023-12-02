@@ -26,7 +26,7 @@ class User:
 
 
 class UserSecret(Document):
-    user_id: PydanticObjectId | None = Field(default=None)
+    user_id: Optional[PydanticObjectId]  = Field(default=None)
     email_hash: Indexed(bytes, unique=True)
     email: bytes
     password: bytes
