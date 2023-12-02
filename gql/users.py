@@ -8,8 +8,6 @@ from typing import List, Optional
 from uuid import uuid4
 
 import argon2
-from aiocache import Cache, cached
-from aiocache.serializers import PickleSerializer
 from beanie.odm.fields import PydanticObjectId
 from beanie.operators import In
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
