@@ -5,9 +5,9 @@ from strawberry.types import Info
 
 from auth import authenticated
 from error import PostCreationError, PostCreationErrorType
+from gql import Page, PostSort
 from models.forum import DBForum
 from models.post import DBPost, Post
-from gql import PostSort, Page
 
 
 @authenticated()
