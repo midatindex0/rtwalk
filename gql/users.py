@@ -262,8 +262,10 @@ async def get_users(
         users = DBUser.find(In(DBUser.id, ids))
     elif usernames:
         users = DBUser.find(In(DBUser.username, usernames))
-    elif search:
-        users = DBUser.find_all().aggregate(
+    else:
+        users = DBUser.find_all()
+    if search:
+        users = users.aggregate(
             [
                 {
                     "$search": {
@@ -278,8 +280,6 @@ async def get_users(
             ],
             projection_model=DBUser,
         )
-    else:
-        users = DBUser.find_all()
     if isinstance(bot, bool):
         users.find(DBUser.bot == bot)
     if isinstance(admin, bool):

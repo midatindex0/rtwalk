@@ -1,6 +1,7 @@
 from typing import List
 
 from slugify import slugify
+from beanie.odm.fields import PydanticObjectId
 from strawberry.types import Info
 
 from auth import authenticated
@@ -45,6 +46,7 @@ async def get_forum(id: str | None = None, name: str | None = None) -> Forum | N
 async def get_forums(
     info: Info,
     ids: None | List[str] = None,
+    owner_id: str | None = None,
     names: None | List[str] = None,
     search: str | None = None,
     locked: bool | None = None,
@@ -59,8 +61,12 @@ async def get_forums(
         forums = DBForum.find(In(DBForum.id, ids))
     elif names:
         forums = DBForum.find(In(DBForum.name, names))
-    elif search:
-        forums = DBForum.find_all().aggregate(
+    elif owner_id:
+        forums = DBForum.find(DBForum.owner_id == PydanticObjectId(owner_id))
+    else:
+        forums = DBForum.find_all()
+    if search:
+        forums = forums.aggregate(
             [
                 {
                     "$search": {
@@ -75,8 +81,6 @@ async def get_forums(
             ],
             projection_model=DBForum,
         )
-    else:
-        forums = DBForum.find_all()
     if isinstance(locked, bool):
         forums.find(DBForum.locked == locked)
     if created_after:
