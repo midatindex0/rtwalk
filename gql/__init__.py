@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Generic, List, TypeVar, Optional
+from typing import Generic, List, Optional, TypeVar
 
 import strawberry
 
