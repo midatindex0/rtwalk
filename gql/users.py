@@ -18,7 +18,7 @@ from zxcvbn import zxcvbn
 
 from auth import authenticated
 from error import InvalidCredentials, UserCreationError, UserCreationErrorType
-from gql import Ok, Page, UserSort, BotCreds
+from gql import BotCreds, Ok, Page, UserSort
 from models.user import DBUser, User, UserSecret
 
 DEV = os.getenv("DEV")
