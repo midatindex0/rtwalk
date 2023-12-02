@@ -14,9 +14,10 @@ class Forum:
     id: str
     name: str
     display_name: str
-    description: Optional[str] = None
-    icon: Optional[File] = None
-    banner: Optional[File] = None
+    description: Optional[str]
+    icon: Optional[File]
+    banner: Optional[File]
+    post_count: int
     created_at: int
     modified_at: int
     owner_id: str
@@ -31,6 +32,7 @@ class DBForum(Document):
     description: Optional[str] = None
     icon: Optional[File] = None
     banner: Optional[File] = None
+    post_count: int = 0
     created_at: int = Field(default_factory=lambda: int(time()))
     modified_at: int = Field(default_factory=lambda: int(time()))
     owner_id: PydanticObjectId
@@ -46,6 +48,7 @@ class DBForum(Document):
             description=self.description,
             icon=self.icon,
             banner=self.banner,
+            post_count=self.post_count,
             created_at=self.created_at,
             modified_at=self.modified_at,
             owner_id=self.owner_id,

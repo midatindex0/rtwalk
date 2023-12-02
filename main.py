@@ -102,6 +102,8 @@ class Query:
     me = strawberry.field(resolver=users.me)
     get_user = strawberry.field(resolver=users.get_user)
     get_users = strawberry.field(resolver=users.get_users)
+    get_forum = strawberry.field(resolver=forums.get_forum)
+    get_forums = strawberry.field(resolver=forums.get_forums)
 
     @strawberry.field
     def version(self) -> Version:

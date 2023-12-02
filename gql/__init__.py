@@ -12,6 +12,12 @@ class Ok:
 @strawberry.enum
 class UserSort(Enum):
     CREATED_AT_ASC = 0
+    CREATED_AT_DESC = 1
+
+
+@strawberry.enum
+class ForumSort(Enum):
+    CREATED_AT_ASC = 0
     CREATED_AT_DESC = 0
 
 

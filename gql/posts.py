@@ -28,6 +28,8 @@ async def create_post(
         raise PostCreationError(
             "Forum is locked", tp=PostCreationErrorType.LOCKED_FORUM
         ).into()
+    forum.post_count += 1
+    await forum.save()
     return (
         await DBPost(
             title=title,
