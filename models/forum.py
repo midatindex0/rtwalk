@@ -20,33 +20,9 @@ class Forum:
     created_at: int
     modified_at: int
     owner_id: str
-
-
-class DBComment(Document):
-    content: Optional[str] = None
-    commenter_id: PydanticObjectId
-    parent_id: PydanticObjectId
-    created_at: int = Field(default_factory=lambda: int(time()))
-    modified_at: int = Field(default_factory=lambda: int(time()))
-    upvotes: int = 0
-    downvotes: int = 0
-    upvoted_by: List[PydanticObjectId] = Field(default=[])
-    downvoted_by: List[PydanticObjectId] = Field(default=[])
-
-
-class DBPost(Document):
-    title: str
-    tags: Optional[List[str]] = None
-    content: Optional[str] = None
-    attachments: Optional[List[File]] = None
-    created_at: int = Field(default_factory=lambda: int(time()))
-    modified_at: int = Field(default_factory=lambda: int(time()))
-    poster_id: PydanticObjectId
-    upvotes: int = 0
-    downvotes: int = 0
-    upvoted_by: List[PydanticObjectId] = Field(default=[])
-    downvoted_by: List[PydanticObjectId] = Field(default=[])
-    comments: List[DBComment] = Field(default=[])
+    moderators: List[str]
+    banned_members: List[str]
+    locked: bool
 
 
 class DBForum(Document):
@@ -60,7 +36,7 @@ class DBForum(Document):
     owner_id: PydanticObjectId
     moderators: List[PydanticObjectId] = Field(default=[])
     banned_members: List[PydanticObjectId] = Field(default=[])
-    posts: List[DBPost] = Field(default=[])
+    locked: bool = False
 
     def gql(self) -> Forum:
         return Forum(
@@ -73,4 +49,7 @@ class DBForum(Document):
             created_at=self.created_at,
             modified_at=self.modified_at,
             owner_id=self.owner_id,
+            moderators=list(map(str, self.moderators)),
+            banned_members=list(map(str, self.banned_members)),
+            locked=self.locked,
         )

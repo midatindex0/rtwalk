@@ -17,9 +17,11 @@ from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
-from gql import users, forums
+from gql import users, forums, posts
 from models.user import DBUser, User, UserSecret
 from models.forum import DBForum
+from models.post import DBPost
+from models.comment import DBComment
 
 MAJOR_V = 0
 MINOR_v = 0
@@ -55,10 +57,14 @@ class Ctx(BaseContext):
         self.email_hasher = scrypt = Scrypt(
             salt=os.getenv("EMAIL_HASH_SALT").encode(), length=32, n=2**14, r=8, p=1
         )
+        self.session_user = None
 
     async def user(self) -> User | None:
         if not self.request:
             return None
+
+        if self.session_user:
+            return self.session_user
 
         session_token = self.request.cookies.get("session")
         if not session_token:
@@ -71,6 +77,7 @@ class Ctx(BaseContext):
             user = User(**(await self.session.get(uuid)))
         except:
             return None
+        self.session_user = user
         return user
 
 
@@ -108,6 +115,7 @@ class Mutation:
     verify_user = strawberry.field(resolver=users.verify_user)
     login = strawberry.field(resolver=users.login)
     create_forum = strawberry.field(resolver=forums.create_forum)
+    create_post = strawberry.field(resolver=posts.create_post)
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
@@ -117,7 +125,10 @@ graphql_app = GraphQLRouter(schema, context_getter=lambda: Ctx())
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(os.getenv("DB_URL"))
-    await init_beanie(database=client.rtwalk_py, document_models=[DBUser, UserSecret, DBForum])
+    await init_beanie(
+        database=client.rtwalk_py,
+        document_models=[DBUser, UserSecret, DBForum, DBPost, DBComment],
+    )
     yield
 
 
