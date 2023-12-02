@@ -1,7 +1,7 @@
 from typing import List
 
-from slugify import slugify
 from beanie.odm.fields import PydanticObjectId
+from slugify import slugify
 from strawberry.types import Info
 
 from auth import authenticated
