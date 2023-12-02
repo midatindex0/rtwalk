@@ -17,11 +17,11 @@ from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
-from gql import users, forums, posts
-from models.user import DBUser, User, UserSecret
+from gql import forums, posts, users
+from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
-from models.comment import DBComment
+from models.user import DBUser, User, UserSecret
 
 MAJOR_V = 0
 MINOR_v = 0

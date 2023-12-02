@@ -1,9 +1,7 @@
-from typing import Optional, List
+from typing import List, Optional
 
-from slugify import slugify
-from strawberry.types import Info
 from beanie.odm.fields import PydanticObjectId
-from beanie.operators import Push
+from strawberry.types import Info
 
 from auth import authenticated
 from error import PostCreationError, PostCreationErrorType

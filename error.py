@@ -65,6 +65,7 @@ class ForumCreationError(Exception):
     def into(self) -> GraphQLError:
         return GraphQLError(self.msg, extensions={"tp": self.tp.name})
 
+
 @strawberry.enum
 class PostCreationErrorType(Enum):
     FORUM_NOT_FOUND = 0

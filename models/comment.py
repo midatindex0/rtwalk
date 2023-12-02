@@ -1,8 +1,7 @@
 from time import time
-from typing import Optional, List
+from typing import List, Optional
 
-import strawberry
-from beanie import Document, Indexed
+from beanie import Document
 from beanie.odm.fields import PydanticObjectId
 from pydantic import Field
 
