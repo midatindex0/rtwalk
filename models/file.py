@@ -8,7 +8,7 @@ CDN_PREFIX = os.getenv("CDN")
 
 
 @strawberry.type
-class File(BaseModel):
+class File:
     loc: str
 
     # @strawberry.field

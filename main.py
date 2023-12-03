@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from typing import Optional
 
 import strawberry
+import opendal
 from aiocache import Cache
 from aiocache.serializers import PickleSerializer
 from argon2 import PasswordHasher
@@ -18,7 +19,7 @@ from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
-from gql import forums, posts, users
+from gql import forums, posts, users, files
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
@@ -46,7 +47,7 @@ session = Cache(
 )
 email_cipher = Fernet(os.getenv("EMAIL_CIPHER_KEY").encode())
 session_cipher = ChaCha20Poly1305(bytes.fromhex(os.getenv("AUTH_KEY")))
-
+op = opendal.AsyncOperator("fs", root="data/")
 
 class Ctx(BaseContext):
     def __init__(self):
@@ -58,6 +59,7 @@ class Ctx(BaseContext):
         self.email_hasher = scrypt = Scrypt(
             salt=os.getenv("EMAIL_HASH_SALT").encode(), length=32, n=2**14, r=8, p=1
         )
+        self.op = op
         self.session_user = None
 
     async def user(self) -> Optional[User]:
@@ -121,6 +123,7 @@ class Mutation:
     login = strawberry.field(resolver=users.login)
     create_forum = strawberry.field(resolver=forums.create_forum)
     create_post = strawberry.field(resolver=posts.create_post)
+    upload_files = strawberry.field(resolver=files.upload_files)
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)

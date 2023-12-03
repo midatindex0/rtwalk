@@ -7,7 +7,7 @@ from auth import authenticated
 from error import PostCreationError, PostCreationErrorType
 from gql import Page, PostSort
 from models.forum import DBForum
-from models.post import DBPost, Post
+from models.post import DBPost, Post, DBPoll
 
 
 @authenticated()
@@ -18,6 +18,7 @@ async def create_post(
     tags: Optional[List[str]] = None,
     content: Optional[str] = None,
     attachments: Optional[List[str]] = None,
+    poll: Optional[List[str]] = None,
 ) -> Post:
     user = await info.context.user()
     forum: DBForum = await DBForum.find_one(DBForum.id == PydanticObjectId(forum_id))
@@ -29,6 +30,10 @@ async def create_post(
         raise PostCreationError(
             "Forum is locked", tp=PostCreationErrorType.LOCKED_FORUM
         ).into()
+    if poll and len(poll) < 2:
+        raise PostCreationError(
+            "Poll should atlest have 2 options", tp=PostCreationErrorType.INVALID_POLL
+        ).into()
     forum.post_count += 1
     await forum.save()
     return (
@@ -38,6 +43,11 @@ async def create_post(
             content=content,
             attachments=[*map(lambda a: File(loc=a), attachments)]
             if attachments
+            else None,
+            poll=DBPoll(
+                options=poll, results=[0] * len(poll), participants=[[]] * len(poll)
+            )
+            if poll
             else None,
             poster_id=user.id,
             forum_id=forum.id,

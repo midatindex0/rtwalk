@@ -69,7 +69,8 @@ class ForumCreationError(Exception):
 @strawberry.enum
 class PostCreationErrorType(Enum):
     FORUM_NOT_FOUND = 0
-    LOCKED_FORUM = 0
+    LOCKED_FORUM = 1
+    INVALID_POLL = 2
 
 
 @strawberry.type

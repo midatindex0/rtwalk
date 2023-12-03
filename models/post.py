@@ -4,9 +4,21 @@ from typing import List, Optional
 import strawberry
 from beanie import Document
 from beanie.odm.fields import PydanticObjectId
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 from models.file import File
+
+@strawberry.type
+class Poll(BaseModel):
+    options: List[str]
+    results: List[int]
+    participants: List[List[str]]
+
+
+class DBPoll(BaseModel):
+    options: List[str]
+    results: List[int]
+    participants: List[List[PydanticObjectId]]
 
 
 @strawberry.type
@@ -16,6 +28,7 @@ class Post:
     tags: Optional[List[str]]
     content: Optional[str]
     attachments: Optional[List[File]]
+    poll: Optional[Poll]
     comment_count: int
     participants: List[str]
     created_at: int
@@ -34,6 +47,7 @@ class DBPost(Document):
     tags: Optional[List[str]] = None
     content: Optional[str] = None
     attachments: Optional[List[File]] = None
+    poll: Optional[DBPoll] = None
     comment_count: int = 0
     participants: List[PydanticObjectId] = Field(default=[])
     created_at: int = Field(default_factory=lambda: int(time()))
@@ -53,6 +67,13 @@ class DBPost(Document):
             tags=self.tags,
             content=self.content,
             attachments=self.attachments,
+            poll=Poll(
+                options=self.poll.options,
+                results=self.poll.results,
+                participants=list(map(lambda l: map(str, l), self.poll.participants)),
+            )
+            if self.poll
+            else None,
             comment_count=self.comment_count,
             participants=list(map(str, self.participants)),
             created_at=self.created_at,
