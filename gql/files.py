@@ -1,7 +1,6 @@
 from typing import List
 
 from beanie.odm.fields import PydanticObjectId
-import strawberry
 from strawberry.file_uploads import Upload
 from strawberry.types import Info
 

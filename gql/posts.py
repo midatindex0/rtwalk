@@ -7,7 +7,7 @@ from auth import authenticated
 from error import PostCreationError, PostCreationErrorType
 from gql import Page, PostSort
 from models.forum import DBForum
-from models.post import DBPost, Post, DBPoll
+from models.post import DBPoll, DBPost, Post
 
 
 @authenticated()

@@ -4,9 +4,10 @@ from typing import List, Optional
 import strawberry
 from beanie import Document
 from beanie.odm.fields import PydanticObjectId
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field
 
 from models.file import File
+
 
 @strawberry.type
 class Poll(BaseModel):

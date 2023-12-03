@@ -6,8 +6,8 @@ import os
 from contextlib import asynccontextmanager
 from typing import Optional
 
-import strawberry
 import opendal
+import strawberry
 from aiocache import Cache
 from aiocache.serializers import PickleSerializer
 from argon2 import PasswordHasher
@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
-from gql import forums, posts, users, files
+from gql import files, forums, posts, users
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
@@ -48,6 +48,7 @@ session = Cache(
 email_cipher = Fernet(os.getenv("EMAIL_CIPHER_KEY").encode())
 session_cipher = ChaCha20Poly1305(bytes.fromhex(os.getenv("AUTH_KEY")))
 op = opendal.AsyncOperator("fs", root="data/")
+
 
 class Ctx(BaseContext):
     def __init__(self):
