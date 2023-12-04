@@ -16,6 +16,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
@@ -24,6 +25,7 @@ from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
 from models.user import DBUser, User, UserSecret
+from consts import CDN_ROUTE
 
 MAJOR_V = 0
 MINOR_v = 0
@@ -144,8 +146,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(graphql_app, prefix="/api/v1")
 
-import uvicorn
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, workers=1)
+app.mount(CDN_ROUTE, StaticFiles(directory="data"), name="cdn")

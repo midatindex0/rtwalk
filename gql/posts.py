@@ -69,7 +69,6 @@ async def get_posts(
     ids: Optional[List[str]] = None,
     poster_id: Optional[str] = None,
     forum_id: Optional[str] = None,
-    forum_name: Optional[str] = None,
     search: Optional[str] = None,
     created_after: Optional[int] = None,
     created_before: Optional[int] = None,
@@ -77,6 +76,7 @@ async def get_posts(
     page: int = 1,
     limit: int = 10,
 ) -> Page[Post]:
+    aggregation_pipe = []
     if ids:
         ids = [*map(PydanticObjectId, ids)]
         posts = DBPost.find(In(DBPost.id, ids))
@@ -87,46 +87,53 @@ async def get_posts(
     else:
         posts = DBPost.find_all()
     if search:
-        posts = posts.aggregate(
-            [
-                {
-                    "$search": {
-                        "index": "posts",
-                        "text": {
-                            "query": search,
-                            "path": ["title", "tags", "content"],
-                            "fuzzy": {},
-                        },
-                    }
+        aggregation_pipe.append(
+            {
+                "$search": {
+                    "index": "posts",
+                    "text": {
+                        "query": search,
+                        "path": ["title", "tags", "content", "poll.options"],
+                        "fuzzy": {},
+                    },
                 }
-            ],
-            projection_model=DBPost,
+            }
         )
     if created_after:
-        posts.find(DBPost.created_at > created_after)
+        aggregation_pipe.append({"$match": {"created_at": {"$gt": created_after}}})
     if created_before:
-        posts.find(DBPost.created_at < created_before)
+        aggregation_pipe.append({"$match": {"created_at": {"$lt": created_before}}})
     if sort:
         if sort == PostSort.CREATED_AT_ASC:
-            posts.sort(+DBPost.created_at)
+            aggregation_pipe.append({"$sort": {"created_at": 1}})
         elif sort == PostSort.CREATED_AT_DESC:
-            posts.sort(-DBPost.created_at)
+            aggregation_pipe.append({"$sort": {"created_at": -1}})
         elif sort == PostSort.PINNED:
-            posts.sort(+DBPost.pinned)
+            aggregation_pipe.append({"$sort": {"pinned": 1}})
         elif sort == PostSort.UPVOTES:
-            posts.sort(+DBPost.upvotes)
+            aggregation_pipe.append({"$sort": {"upvotes": 1}})
         elif sort == PostSort.DOWNVOTES:
-            posts.sort(+DBPost.downvotes)
+            aggregation_pipe.append({"$sort": {"downvotes": 1}})
     total = 0
     for selection in info.selected_fields:
         if selection.name == "getPosts":
             for field in selection.selections:
                 if field.name == "total":
-                    total = await posts.count()
+                    p = aggregation_pipe.copy()
+                    p.append({"$count": "total"})
+                    try:
+                        total = (
+                            await posts.aggregate(aggregation_pipeline=p).to_list()
+                        )[0]["total"]
+                    except:
+                        pass
                     break
 
-    limit = min(20, limit)
-    posts.skip(limit * (page - 1)).limit(limit)
+    page = max(1, page)
+    limit = max(min(20, limit), 1)
+    aggregation_pipe.append({"$skip": limit * (page - 1)})
+    aggregation_pipe.append({"$limit": limit})
+    posts = posts.aggregate(aggregation_pipe, projection_model=DBPost)
     posts = await posts.to_list()
 
     return Page(

@@ -6,7 +6,7 @@ from strawberry.file_uploads import Upload
 from strawberry.types import Info
 
 from auth import authenticated
-from error import FileUploadError
+from error import FileUploadError, FileUploadErrorType
 from models.file import File
 
 
@@ -17,7 +17,7 @@ async def upload_files(files: List[Upload], info: Info) -> List[File]:
     for file in files:
         if file.size > MAX_FILE_SIZE:
             raise FileUploadError(
-                "Maximum file size is 32mb", tp=FileNotFoundErrorType.FILE_TOO_BIG
+                "Maximum file size is 32mb", tp=FileUploadErrorType.FILE_TOO_BIG
             )
         content = await file.read()
         f = File(loc=f"{user.username}/{PydanticObjectId()}-{file.filename}")

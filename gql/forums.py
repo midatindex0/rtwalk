@@ -58,6 +58,7 @@ async def get_forums(
     page: int = 1,
     limit: int = 10,
 ) -> Page[Forum]:
+    aggregation_pipe = []
     if ids:
         ids = [*map(PydanticObjectId, ids)]
         forums = DBForum.find(In(DBForum.id, ids))
@@ -68,42 +69,49 @@ async def get_forums(
     else:
         forums = DBForum.find_all()
     if search:
-        forums = forums.aggregate(
-            [
-                {
-                    "$search": {
-                        "index": "forums",
-                        "text": {
-                            "query": search,
-                            "path": ["name", "display_name", "description"],
-                            "fuzzy": {},
-                        },
-                    }
+        aggregation_pipe.append(
+            {
+                "$search": {
+                    "index": "forums",
+                    "text": {
+                        "query": search,
+                        "path": ["name", "display_name", "description"],
+                        "fuzzy": {},
+                    },
                 }
-            ],
-            projection_model=DBForum,
+            }
         )
     if isinstance(locked, bool):
-        forums.find(DBForum.locked == locked)
+        aggregation_pipe.append({"$match": {"locked": locked}})
     if created_after:
-        forums.find(DBForum.created_at > created_after)
+        aggregation_pipe.append({"$match": {"created_at": {"$gt": created_after}}})
     if created_before:
-        forums.find(DBForum.created_at < created_before)
+        aggregation_pipe.append({"$match": {"created_at": {"$lt": created_before}}})
     if sort:
         if sort == ForumSort.CREATED_AT_ASC:
-            forums.sort(+DBForum.created_at)
+            aggregation_pipe.append({"$sort": {"created_at": 1}})
         elif sort == ForumSort.CREATED_AT_DESC:
-            forums.sort(-DBForum.created_at)
+            aggregation_pipe.append({"$sort": {"created_at": -1}})
     total = 0
     for selection in info.selected_fields:
         if selection.name == "getForums":
             for field in selection.selections:
                 if field.name == "total":
-                    total = await forums.count()
+                    p = aggregation_pipe.copy()
+                    p.append({"$count": "total"})
+                    try:
+                        total = (
+                            await forums.aggregate(aggregation_pipeline=p).to_list()
+                        )[0]["total"]
+                    except:
+                        pass
                     break
 
-    limit = min(20, limit)
-    forums.skip(limit * (page - 1)).limit(limit)
+    page = max(1, page)
+    limit = max(min(20, limit), 1)
+    aggregation_pipe.append({"$skip": limit * (page - 1)})
+    aggregation_pipe.append({"$limit": limit})
+    forums = forums.aggregate(aggregation_pipe, projection_model=DBForum)
     forums = await forums.to_list()
 
     return Page(
