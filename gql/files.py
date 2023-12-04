@@ -1,11 +1,11 @@
 from typing import List
 
 from beanie.odm.fields import PydanticObjectId
-from consts import MAX_FILE_SIZE
 from strawberry.file_uploads import Upload
 from strawberry.types import Info
 
 from auth import authenticated
+from consts import MAX_FILE_SIZE
 from error import FileUploadError, FileUploadErrorType
 from models.file import File
 

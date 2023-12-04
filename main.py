@@ -20,12 +20,12 @@ from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
+from consts import CDN_ROUTE
 from gql import files, forums, posts, users
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
 from models.user import DBUser, User, UserSecret
-from consts import CDN_ROUTE
 
 MAJOR_V = 0
 MINOR_v = 0
