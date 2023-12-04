@@ -285,9 +285,9 @@ async def get_users(
                     p = aggregation_pipe.copy()
                     p.append({"$count": "total"})
                     try:
-                        total = (await users.aggregate(aggregation_pipeline=p).to_list())[
-                            0
-                        ]["total"]
+                        total = (
+                            await users.aggregate(aggregation_pipeline=p).to_list()
+                        )[0]["total"]
                     except:
                         pass
                     break
