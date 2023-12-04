@@ -71,11 +71,28 @@ class PostCreationErrorType(Enum):
     FORUM_NOT_FOUND = 0
     LOCKED_FORUM = 1
     INVALID_POLL = 2
+    BANNED_MEMBER = 3
 
 
 @strawberry.type
 class PostCreationError(Exception):
     def __init__(self, *args, tp: PostCreationErrorType):
+        super().__init__(*args)
+        self.msg = args[0]
+        self.tp = tp
+
+    def into(self) -> GraphQLError:
+        return GraphQLError(self.msg, extensions={"tp": self.tp.name})
+
+
+@strawberry.enum
+class FileUploadErrorType(Enum):
+    FILE_TOO_BIG = 9
+
+
+@strawberry.type
+class FileUploadError(Exception):
+    def __init__(self, *args, tp: FileUploadErrorType):
         super().__init__(*args)
         self.msg = args[0]
         self.tp = tp

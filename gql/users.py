@@ -250,45 +250,53 @@ async def get_users(
         users = DBUser.find(In(DBUser.username, usernames))
     else:
         users = DBUser.find_all()
+    aggregation_pipe = []
     if search:
-        users = users.aggregate(
-            [
-                {
-                    "$search": {
-                        "index": "users",
-                        "text": {
-                            "query": search,
-                            "path": ["username", "display_name", "bio"],
-                            "fuzzy": {},
-                        },
-                    }
+        aggregation_pipe.append(
+            {
+                "$search": {
+                    "index": "users",
+                    "text": {
+                        "query": search,
+                        "path": ["username", "display_name", "bio"],
+                        "fuzzy": {},
+                    },
                 }
-            ],
-            projection_model=DBUser,
+            }
         )
     if isinstance(bot, bool):
-        users.find(DBUser.bot == bot)
+        aggregation_pipe.append({"$match": {"bot": bot}})
     if isinstance(admin, bool):
-        users.find(DBUser.admin == admin)
+        aggregation_pipe.append({"$match": {"admin": admin}})
     if created_after:
-        users.find(DBUser.created_at > created_after)
+        aggregation_pipe.append({"$match": {"created_at": {"$gt": created_after}}})
     if created_before:
-        users.find(DBUser.created_at < created_before)
+        aggregation_pipe.append({"$match": {"created_at": {"$lt": created_before}}})
     if sort:
         if sort == UserSort.CREATED_AT_ASC:
-            users.sort(+DBUser.created_at)
+            aggregation_pipe.append({"$sort": {"created_at": 1}})
         elif seor == UserSort.CREATED_AT_DESC:
-            users.sort(-DBUser.created_at)
+            aggregation_pipe.append({"$sort": {"created_at": -1}})
     total = 0
     for selection in info.selected_fields:
         if selection.name == "getUsers":
             for field in selection.selections:
                 if field.name == "total":
-                    total = await users.count()
+                    p = aggregation_pipe.copy()
+                    p.append({"$count": "total"})
+                    try:
+                        total = (await users.aggregate(aggregation_pipeline=p).to_list())[
+                            0
+                        ]["total"]
+                    except:
+                        pass
                     break
 
-    limit = min(20, limit)
-    users.skip(limit * (page - 1)).limit(limit)
+    page = max(1, page)
+    limit = max(min(20, limit), 1)
+    aggregation_pipe.append({"$skip": limit * (page - 1)})
+    aggregation_pipe.append({"$limit": limit})
+    users = users.aggregate(aggregation_pipe, projection_model=DBUser)
     users = await users.to_list()
 
     return Page(

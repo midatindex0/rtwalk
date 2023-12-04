@@ -147,5 +147,5 @@ app.include_router(graphql_app, prefix="/api/v1")
 import uvicorn
 
 if __name__ == "__main__":
-    port = int(getenv("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, workers=4)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, workers=1)

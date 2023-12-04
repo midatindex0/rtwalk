@@ -9,3 +9,4 @@ vercel.json
 index.py
 .vercelignore
 data/
+mprofile*

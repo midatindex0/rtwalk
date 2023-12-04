@@ -30,6 +30,10 @@ async def create_post(
         raise PostCreationError(
             "Forum is locked", tp=PostCreationErrorType.LOCKED_FORUM
         ).into()
+    if user.id in forum.banned_members:
+        raise PostCreationError(
+            "You are banned in this forum", tp=PostCreationErrorType.BANNED_MEMBER
+        ).into()
     if poll and len(poll) < 2:
         raise PostCreationError(
             "Poll should atlest have 2 options", tp=PostCreationErrorType.INVALID_POLL
