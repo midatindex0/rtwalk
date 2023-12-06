@@ -15,10 +15,10 @@ from strawberry.types import Info
 from zxcvbn import zxcvbn
 
 from auth import authenticated
+from consts import MAX_SESSIONS
 from error import InvalidCredentials, UserCreationError, UserCreationErrorType
 from gql import BotCreds, Ok, Page, UserSort
 from models.user import DBUser, User, UserSecret
-from consts import MAX_SESSIONS
 
 DEV = os.getenv("DEV")
 

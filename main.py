@@ -16,13 +16,13 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
 from consts import CDN_ROUTE, ORIGINS
-from gql import files, forums, posts, users, comments
+from gql import comments, files, forums, posts, users
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost

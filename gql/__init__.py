@@ -31,6 +31,7 @@ class PostSort(Enum):
     MODIFIED_AT_ASC = 5
     MODIFIED_AT_DESC = 6
 
+
 @strawberry.enum
 class CommentSort(Enum):
     CREATED_AT_ASC = 0

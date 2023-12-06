@@ -1,15 +1,15 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from beanie.odm.fields import PydanticObjectId
 from beanie.operators import In
 from strawberry.types import Info
 
 from auth import authenticated
-from models.post import DBPost
-from models.forum import DBForum
-from models.comment import DBComment, Comment
 from error import CommentCreationError, CommentCreationErrorType
 from gql import CommentSort, Page
+from models.comment import Comment, DBComment
+from models.forum import DBForum
+from models.post import DBPost
 
 
 @authenticated()
