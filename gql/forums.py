@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from beanie.odm.fields import PydanticObjectId
+from beanie.operators import In
 from slugify import slugify
 from strawberry.types import Info
 

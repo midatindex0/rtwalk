@@ -86,6 +86,23 @@ class PostCreationError(Exception):
 
 
 @strawberry.enum
+class CommentCreationErrorType(Enum):
+    POST_NOT_FOUND = 0
+    BANNED_MEMBER = 1
+
+
+@strawberry.type
+class CommentCreationError(Exception):
+    def __init__(self, *args, tp: CommentCreationErrorType):
+        super().__init__(*args)
+        self.msg = args[0]
+        self.tp = tp
+
+    def into(self) -> GraphQLError:
+        return GraphQLError(self.msg, extensions={"tp": self.tp.name})
+
+
+@strawberry.enum
 class FileUploadErrorType(Enum):
     FILE_TOO_BIG = 9
 

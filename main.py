@@ -17,11 +17,12 @@ from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
-from consts import CDN_ROUTE
-from gql import files, forums, posts, users
+from consts import CDN_ROUTE, ORIGINS
+from gql import files, forums, posts, users, comments
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
@@ -86,6 +87,30 @@ class Ctx(BaseContext):
         self.session_user = user
         return user
 
+    async def logout(self):
+        if not self.request:
+            return
+
+        session_token = self.request.cookies.get("session")
+        if not session_token:
+            return
+        try:
+            token, nonce = session_token.split(";")
+            uuid = self.session_cipher.decrypt(
+                bytes.fromhex(nonce), bytes.fromhex(token), None
+            ).decode()
+            user = User(**(await self.session.get(uuid)))
+            sessions = await self.session.get(user.id)
+            sessions.remove(uuid)
+            if sessions:
+                sessions = await self.session.set(user.id, sessions)
+            else:
+                await self.session.delete(user.id)
+            await self.session.delete(uuid)
+        except:
+            return
+        self.session_user = None
+
 
 @strawberry.type
 class Version:
@@ -112,6 +137,8 @@ class Query:
     get_forums = strawberry.field(resolver=forums.get_forums)
     get_post = strawberry.field(resolver=posts.get_post)
     get_posts = strawberry.field(resolver=posts.get_posts)
+    get_comment = strawberry.field(resolver=comments.get_comment)
+    get_comments = strawberry.field(resolver=comments.get_comments)
 
     @strawberry.field
     def version(self) -> Version:
@@ -124,8 +151,10 @@ class Mutation:
     create_bot = strawberry.field(resolver=users.create_bot)
     verify_user = strawberry.field(resolver=users.verify_user)
     login = strawberry.field(resolver=users.login)
+    logout = strawberry.field(resolver=users.logout)
     create_forum = strawberry.field(resolver=forums.create_forum)
     create_post = strawberry.field(resolver=posts.create_post)
+    create_comment = strawberry.field(resolver=comments.create_commment)
     upload_files = strawberry.field(resolver=files.upload_files)
 
 
@@ -144,6 +173,15 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(graphql_app, prefix="/api/v1")
 
 app.mount(CDN_ROUTE, StaticFiles(directory="data"), name="cdn")

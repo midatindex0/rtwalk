@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from beanie.odm.fields import PydanticObjectId
+from beanie.operators import In
 from strawberry.types import Info
 
 from auth import authenticated
@@ -69,6 +70,7 @@ async def get_posts(
     ids: Optional[List[str]] = None,
     poster_id: Optional[str] = None,
     forum_id: Optional[str] = None,
+    tags: Optional[str] = None,
     search: Optional[str] = None,
     created_after: Optional[int] = None,
     created_before: Optional[int] = None,
@@ -84,6 +86,8 @@ async def get_posts(
         posts = DBPost.find(DBPost.poster_id == PydanticObjectId(poster_id))
     elif forum_id:
         posts = DBPost.find(DBPost.forum_id == PydanticObjectId(forum_id))
+    elif tags:
+        posts = DBPost.find(All(DBPost.tags, tags))
     else:
         posts = DBPost.find_all()
     if search:
@@ -108,12 +112,15 @@ async def get_posts(
             aggregation_pipe.append({"$sort": {"created_at": 1}})
         elif sort == PostSort.CREATED_AT_DESC:
             aggregation_pipe.append({"$sort": {"created_at": -1}})
-        elif sort == PostSort.PINNED:
-            aggregation_pipe.append({"$sort": {"pinned": 1}})
+        elif sort == PostSort.MODIFIED_AT_ASC:
+            aggregation_pipe.append({"$sort": {"modified_at": 1}})
+        elif sort == PostSort.MODIFIED_AT_DESC:
+            aggregation_pipe.append({"$sort": {"modified_at": -1}})
         elif sort == PostSort.UPVOTES:
             aggregation_pipe.append({"$sort": {"upvotes": 1}})
         elif sort == PostSort.DOWNVOTES:
             aggregation_pipe.append({"$sort": {"downvotes": 1}})
+    aggregation_pipe.append({"$sort": {"pinned": 1}})
     total = 0
     for selection in info.selected_fields:
         if selection.name == "getPosts":

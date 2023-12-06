@@ -18,6 +18,7 @@ from auth import authenticated
 from error import InvalidCredentials, UserCreationError, UserCreationErrorType
 from gql import BotCreds, Ok, Page, UserSort
 from models.user import DBUser, User, UserSecret
+from consts import MAX_SESSIONS
 
 DEV = os.getenv("DEV")
 
@@ -115,6 +116,7 @@ alphabet = (string.ascii_letters + string.digits + string.punctuation).replace("
 
 @authenticated(bot=False)
 async def create_bot(info: Info, username: str) -> BotCreds:
+    owner = await info.context.user()
     if not re.match(username_regex, username):
         raise UserCreationError(
             f"Username can only have lower case letters, numbers and underscore",
@@ -203,6 +205,14 @@ async def login(email: str, password: str, info: Info) -> User:
         ):
             user = await DBUser.find_one(DBUser.id == user_secret.user_id)
             uuid = uuid4()
+            sessions = await info.context.session.get(user.id)
+            if sessions:
+                if len(sessions) > MAX_SESSIONS:
+                    raise InvalidCredentials().gql()
+                sessions.append(str(uuid))
+                await info.context.session.set(user.id, sessions)
+            else:
+                await info.context.session.set(user.id, [str(uuid)])
             nonce = os.urandom(12)
             cookie = f"{info.context.session_cipher.encrypt(nonce, str(uuid).encode(), None).hex()};{nonce.hex()}"
             await info.context.session.set(str(uuid), user.gql().__dict__)
@@ -210,6 +220,12 @@ async def login(email: str, password: str, info: Info) -> User:
             return user
     except argon2.exceptions.VerifyMismatchError:
         raise InvalidCredentials().gql()
+
+
+@authenticated()
+async def logout(info: Info) -> Ok:
+    await info.context.logout()
+    return Ok(msg="Logged out user")
 
 
 @authenticated()

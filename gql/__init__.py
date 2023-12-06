@@ -28,6 +28,16 @@ class PostSort(Enum):
     PINNED = 2
     UPVOTES = 3
     DOWNVOTES = 4
+    MODIFIED_AT_ASC = 5
+    MODIFIED_AT_DESC = 6
+
+@strawberry.enum
+class CommentSort(Enum):
+    CREATED_AT_ASC = 0
+    CREATED_AT_DESC = 1
+    PINNED = 2
+    UPVOTES = 3
+    DOWNVOTES = 4
 
 
 @strawberry.type
