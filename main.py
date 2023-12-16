@@ -8,6 +8,7 @@ from typing import Optional
 
 import opendal
 import strawberry
+import uvicorn
 from aiocache import Cache
 from aiocache.serializers import PickleSerializer
 from argon2 import PasswordHasher
@@ -20,7 +21,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
-import uvicorn
 
 from consts import CDN_ROUTE, ORIGINS
 from gql import comments, files, forums, posts, users
