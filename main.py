@@ -20,6 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
+import uvicorn
 
 from consts import CDN_ROUTE, ORIGINS
 from gql import comments, files, forums, posts, users
@@ -192,3 +193,6 @@ app.add_middleware(
 app.include_router(graphql_app, prefix="/api/v1")
 
 app.mount(CDN_ROUTE, StaticFiles(directory="data"), name="cdn")
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="127.0.0.1", port=3758, workers=2)
