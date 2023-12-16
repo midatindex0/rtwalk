@@ -9,12 +9,14 @@ from pydantic import Field
 
 @strawberry.type
 class Comment:
+    id: str
     content: str
     commenter_id: str
     reply_to: Optional[str]
     post_id: str
     created_at: int
     modified_at: int
+    reply_count: int
     upvotes: int
     downvotes: int
     upvoted_by: List[str]
@@ -28,7 +30,24 @@ class DBComment(Document):
     post_id: PydanticObjectId
     created_at: int = Field(default_factory=lambda: int(time()))
     modified_at: int = Field(default_factory=lambda: int(time()))
+    reply_count: int = 0
     upvotes: int = 0
     downvotes: int = 0
     upvoted_by: List[PydanticObjectId] = Field(default=[])
-    downvoted_by: List[PydanticObjectId] = [Field(default=[])]
+    downvoted_by: List[PydanticObjectId] = Field(default=[])
+
+    def gql(self) -> Comment:
+        return Comment(
+            id=str(self.id),
+            content=self.content,
+            commenter_id=str(self.commenter_id),
+            reply_to=str(self.reply_to) if self.reply_to else None,
+            post_id=str(self.post_id),
+            created_at=self.created_at,
+            modified_at=self.modified_at,
+            reply_count=self.reply_count,
+            upvoted_by=list(map(str, self.upvoted_by)),
+            downvoted_by=list(map(str, self.downvoted_by)),
+            upvotes=self.upvotes,
+            downvotes=self.downvotes,
+        )

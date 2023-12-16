@@ -22,7 +22,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
 from consts import CDN_ROUTE, ORIGINS
-from gql import comments, files, forums, posts, users
+from gql import comments, files, forums, posts, users, subscriptions
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
@@ -156,6 +156,13 @@ class Mutation:
     create_post = strawberry.field(resolver=posts.create_post)
     create_comment = strawberry.field(resolver=comments.create_commment)
     upload_files = strawberry.field(resolver=files.upload_files)
+
+
+# @strawberry.type
+# class Subscription:
+#     post_creation_event = strawberry.subscription(
+#         resolver=subscriptions.post_creation_event
+#     )
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)

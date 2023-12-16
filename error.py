@@ -7,7 +7,7 @@ from graphql.error import GraphQLError
 @strawberry.enum
 class UserCreationErrorType(Enum):
     WEAK_PASSWORD = "WEAK_PASSOWRD"
-    INVALID_USERNAME = "USERNAME_TOO_SHORT"
+    INVALID_USERNAME = "INVALID_USERNAME"
     USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS"
     INCORRECT_CODE = 3
     CODE_EXPIRED = 4
@@ -89,6 +89,7 @@ class PostCreationError(Exception):
 class CommentCreationErrorType(Enum):
     POST_NOT_FOUND = 0
     BANNED_MEMBER = 1
+    PARENT_NOT_FOUND = 2
 
 
 @strawberry.type

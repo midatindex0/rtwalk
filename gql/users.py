@@ -159,7 +159,7 @@ async def create_bot(info: Info, username: str) -> BotCreds:
     return BotCreds(token=f"{email}@{password}")
 
 
-async def verify_user(username: str, code: int, info: Info) -> User:
+async def verify_user(username: str, code: str, info: Info) -> User:
     try:
         ccode, user, user_secret, attempts = await info.context.pending.get(username)
     except:
@@ -173,7 +173,7 @@ async def verify_user(username: str, code: int, info: Info) -> User:
             f"Your code expired. Register again",
             tp=UserCreationErrorType.CODE_EXPIRED,
         ).into()
-    if not compare_digest(str(code), str(ccode)):
+    if not compare_digest(code, str(ccode)):
         await info.context.pending.set(
             username, [code, user, user_secret, attempts + 1]
         )

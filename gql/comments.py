@@ -19,7 +19,7 @@ async def create_commment(
     content: str,
     reply_to: Optional[str] = None,
 ) -> Comment:
-    user = await info.content.user()
+    user = await info.context.user()
     post = await DBPost.find_one(DBPost.id == PydanticObjectId(post_id))
     if not post:
         raise CommentCreationError(
@@ -31,8 +31,18 @@ async def create_commment(
     if user.id in forum.banned_members:
         raise CommentCreationError(
             "You are banned in this forum",
-            tp=CommentCreationErrorType.POST_NOT_FOUND,
+            tp=CommentCreationErrorType.BANNED_MEMBER,
         )
+
+    if reply_to:
+        parent = await DBComment.find_one(DBComment.id == PydanticObjectId(reply_to))
+        if not parent:
+            raise CommentCreationError(
+                "Parent comment does not exist",
+                tp=CommentCreationErrorType.PARENT_NOT_FOUND,
+            )
+        parent.reply_count += 1
+        await parent.save()
     comment = DBComment(
         content=content,
         commenter_id=user.id,
@@ -75,11 +85,6 @@ async def get_comments(
         comments = DBComment.find(DBComment.post_id == PydanticObjectId(post_id))
     elif reply_to:
         comments = DBComment.find(DBComment.reply_to == PydanticObjectId(reply_to))
-    elif isinstance(parent, bool):
-        if parent:
-            comments = DBComment.find(DBComment.reply_to == None)
-        else:
-            comments = DBComment.find(DBComment.reply_to != None)
     else:
         comments = DBComment.find_all()
     # if search:
@@ -95,6 +100,11 @@ async def get_comments(
     #             }
     #         }
     #     )
+    if isinstance(parent, bool):
+        if parent:
+            comments = DBComment.find(DBComment.reply_to == None)
+        else:
+            comments = DBComment.find(DBComment.reply_to != None)
     if created_after:
         aggregation_pipe.append({"$match": {"created_at": {"$gt": created_after}}})
     if created_before:
