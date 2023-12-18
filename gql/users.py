@@ -132,7 +132,6 @@ async def create_bot(info: Info, username: str) -> BotCreds:
             f"Username must be atlest 4 characters",
             tp=UserCreationErrorType.USERNAME_TOO_SHORT,
         ).into()
-    # TODO: Check invalid character
     u = await DBUser.find_one(DBUser.username == username)
     if u:
         raise UserCreationError(
@@ -216,7 +215,7 @@ async def login(email: str, password: str, info: Info) -> User:
             nonce = os.urandom(12)
             cookie = f"{info.context.session_cipher.encrypt(nonce, str(uuid).encode(), None).hex()};{nonce.hex()}"
             await info.context.session.set(str(uuid), user.gql().__dict__)
-            info.context.response.set_cookie(key="session", value=cookie, secure=False)
+            info.context.response.set_cookie(key="session", value=cookie, secure=True, httponly=True, samesite="none") # TODO: make https
             return user
     except argon2.exceptions.VerifyMismatchError:
         raise InvalidCredentials().gql()
