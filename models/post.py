@@ -41,6 +41,7 @@ class Post:
     upvoted_by: List[str]
     downvoted_by: List[str]
     pinned: bool
+    rolling: bool
 
 
 class DBPost(Document):
@@ -60,6 +61,7 @@ class DBPost(Document):
     upvoted_by: List[PydanticObjectId] = Field(default=[])
     downvoted_by: List[PydanticObjectId] = Field(default=[])
     pinned: bool = False
+    rolling: bool = False
 
     def gql(self) -> Post:
         return Post(
@@ -86,4 +88,5 @@ class DBPost(Document):
             upvoted_by=list(map(str, self.upvoted_by)),
             downvoted_by=list(map(str, self.downvoted_by)),
             pinned=self.pinned,
+            rolling=self.rolling,
         )

@@ -20,6 +20,7 @@ async def create_post(
     content: Optional[str] = None,
     attachments: Optional[List[str]] = None,
     poll: Optional[List[str]] = None,
+    rolling: bool = False,
 ) -> Post:
     user = await info.context.user()
     forum: DBForum = await DBForum.find_one(DBForum.id == PydanticObjectId(forum_id))
@@ -56,6 +57,7 @@ async def create_post(
             else None,
             poster_id=user.id,
             forum_id=forum.id,
+            rolling=rolling,
         ).insert()
     ).gql()
 
