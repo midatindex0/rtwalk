@@ -215,7 +215,13 @@ async def login(email: str, password: str, info: Info) -> User:
             nonce = os.urandom(12)
             cookie = f"{info.context.session_cipher.encrypt(nonce, str(uuid).encode(), None).hex()};{nonce.hex()}"
             await info.context.session.set(str(uuid), user.gql().__dict__)
+<<<<<<< HEAD
             info.context.response.set_cookie(key="session", value=cookie, secure=True, httponly=True, samesite="none")
+=======
+            info.context.response.set_cookie(
+                key="session", value=cookie, secure=True, httponly=True, samesite="none"
+            )  # TODO: make https
+>>>>>>> 9b1166e4838f4eaac67cb3413599200a8cb62255
             return user
     except argon2.exceptions.VerifyMismatchError:
         raise InvalidCredentials().gql()
