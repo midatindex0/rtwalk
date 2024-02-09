@@ -13,6 +13,7 @@ class UserCreationErrorType(Enum):
     CODE_EXPIRED = 4
     UNSATISFIED_REQUIREMENTS = 5
     INVALID_EMAIL = 6
+    USERNAME_TOO_SHORT = 7
 
 
 @strawberry.type

@@ -10,6 +10,7 @@ from gql import CommentSort, Page
 from models.comment import Comment, DBComment
 from models.forum import DBForum
 from models.post import DBPost
+import ast
 
 
 @authenticated()
@@ -52,7 +53,11 @@ async def create_commment(
     post.comment_count += 1
     await post.save()
     await comment.insert()
-    return comment
+    await info.context.broadcast.publish(
+        channel="rte",
+        message=str({"item": comment.model_dump(), "event": "COMMENT_NEW"}),
+    )
+    return comment.gql()
 
 
 async def get_comment(id: str) -> Optional[Comment]:

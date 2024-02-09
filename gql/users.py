@@ -48,17 +48,17 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
     """
     if not re.match(username_regex, username):
         raise UserCreationError(
-            f"Username can only have lower case letters, numbers and underscore",
+            "Username can only have lower case letters, numbers and underscore",
             tp=UserCreationErrorType.INVALID_USERNAME,
         ).into()
     if len(username) < 4:
         raise UserCreationError(
-            f"Username must be atlest 4 characters",
+            "Username must be atlest 4 characters",
             tp=UserCreationErrorType.INVALID_USERNAME,
         ).into()
     if not re.fullmatch(email_regex, email):
         raise UserCreationError(
-            f"Invalid email address",
+            "Invalid email address",
             tp=UserCreationErrorType.INVALID_EMAIL,
         ).into()
     r = zxcvbn(password, user_inputs=[username, email])
@@ -70,7 +70,7 @@ async def create_user(username: str, email: str, password: str, info: Info) -> O
     u = await DBUser.find_one(DBUser.username == username)
     if u:
         raise UserCreationError(
-            f"Username already exists",
+            "Username already exists",
             tp=UserCreationErrorType.USERNAME_ALREADY_EXISTS,
         ).into()
 
@@ -119,23 +119,23 @@ async def create_bot(info: Info, username: str) -> BotCreds:
     owner = await info.context.user()
     if not re.match(username_regex, username):
         raise UserCreationError(
-            f"Username can only have lower case letters, numbers and underscore",
+            "Username can only have lower case letters, numbers and underscore",
             tp=UserCreationErrorType.INVALID_USERNAME,
         ).into()
     if len(username) < 4:
         raise UserCreationError(
-            f"Username must be atlest 4 characters",
+            "Username must be atlest 4 characters",
             tp=UserCreationErrorType.INVALID_USERNAME,
         ).into()
     if len(username) < 4:
         raise UserCreationError(
-            f"Username must be atlest 4 characters",
+            "Username must be atlest 4 characters",
             tp=UserCreationErrorType.USERNAME_TOO_SHORT,
         ).into()
     u = await DBUser.find_one(DBUser.username == username)
     if u:
         raise UserCreationError(
-            f"Username already exists",
+            "Username already exists",
             tp=UserCreationErrorType.USERNAME_ALREADY_EXISTS,
         ).into()
 
@@ -163,13 +163,13 @@ async def verify_user(username: str, code: str, info: Info) -> User:
         ccode, user, user_secret, attempts = await info.context.pending.get(username)
     except:
         raise UserCreationError(
-            f"Your code expired. Register again",
+            "Your code expired. Register again",
             tp=UserCreationErrorType.CODE_EXPIRED,
         ).into()
     if attempts == 3:
         await info.context.pending.delete(username)
         raise UserCreationError(
-            f"Your code expired. Register again",
+            "Your code expired. Register again",
             tp=UserCreationErrorType.CODE_EXPIRED,
         ).into()
     if not compare_digest(code, str(ccode)):
@@ -177,7 +177,7 @@ async def verify_user(username: str, code: str, info: Info) -> User:
             username, [code, user, user_secret, attempts + 1]
         )
         raise UserCreationError(
-            f"Incorrect code",
+            "Incorrect code",
             tp=UserCreationErrorType.INCORRECT_CODE,
         ).into()
     await info.context.pending.delete(username)
@@ -212,16 +212,14 @@ async def login(email: str, password: str, info: Info) -> User:
                 await info.context.session.set(user.id, sessions)
             else:
                 await info.context.session.set(user.id, [str(uuid)])
-            nonce = os.urandom(12)
-            cookie = f"{info.context.session_cipher.encrypt(nonce, str(uuid).encode(), None).hex()};{nonce.hex()}"
             await info.context.session.set(str(uuid), user.gql().__dict__)
-<<<<<<< HEAD
-            info.context.response.set_cookie(key="session", value=cookie, secure=True, httponly=True, samesite="none")
-=======
             info.context.response.set_cookie(
-                key="session", value=cookie, secure=True, httponly=True, samesite="none"
-            )  # TODO: make https
->>>>>>> 9b1166e4838f4eaac67cb3413599200a8cb62255
+                key="session",
+                value=str(uuid),
+                secure=False,
+                httponly=True,
+                samesite="none",
+            )
             return user
     except argon2.exceptions.VerifyMismatchError:
         raise InvalidCredentials().gql()

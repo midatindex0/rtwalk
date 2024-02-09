@@ -1,3 +1,4 @@
+import broadcaster
 import dotenv
 
 dotenv.load_dotenv()
@@ -14,23 +15,26 @@ from aiocache.serializers import PickleSerializer
 from argon2 import PasswordHasher
 from beanie import init_beanie
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware import Middleware
 from strawberry.fastapi import BaseContext, GraphQLRouter
+from broadcaster import Broadcast
 
 from consts import CDN_ROUTE, ORIGINS
-from gql import comments, files, forums, posts, users
+from gql import comments, files, forums, posts, users, subscriptions
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
 from models.user import DBUser, User, UserSecret
 
+
 MAJOR_V = 0
-MINOR_v = 0
+MINOR_v = 1
 BUG_FIX_V = 0
 
 ph = PasswordHasher()
@@ -50,8 +54,10 @@ session = Cache(
     ttl=15 * 24 * 60 * 60,
 )
 email_cipher = Fernet(os.getenv("EMAIL_CIPHER_KEY").encode())
-session_cipher = ChaCha20Poly1305(bytes.fromhex(os.getenv("AUTH_KEY")))
 op = opendal.AsyncOperator("fs", root="data/")
+broadcast = Broadcast(
+    f'redis://{os.getenv("REDIS_ENDPOINT")}:{os.getenv("REDIS_PORT")}'
+)
 
 
 class Ctx(BaseContext):
@@ -60,11 +66,11 @@ class Ctx(BaseContext):
         self.pending = pending
         self.session = session
         self.email_cipher = email_cipher
-        self.session_cipher = session_cipher
-        self.email_hasher = scrypt = Scrypt(
+        self.email_hasher = Scrypt(
             salt=os.getenv("EMAIL_HASH_SALT").encode(), length=32, n=2**14, r=8, p=1
         )
         self.op = op
+        self.broadcast = broadcast
         self.session_user = None
 
     async def user(self) -> Optional[User]:
@@ -78,11 +84,7 @@ class Ctx(BaseContext):
         if not session_token:
             return None
         try:
-            token, nonce = session_token.split(";")
-            uuid = self.session_cipher.decrypt(
-                bytes.fromhex(nonce), bytes.fromhex(token), None
-            ).decode()
-            user = User(**(await self.session.get(uuid)))
+            user = User(**(await self.session.get(session_token)))
         except:
             return None
         self.session_user = user
@@ -96,18 +98,14 @@ class Ctx(BaseContext):
         if not session_token:
             return
         try:
-            token, nonce = session_token.split(";")
-            uuid = self.session_cipher.decrypt(
-                bytes.fromhex(nonce), bytes.fromhex(token), None
-            ).decode()
-            user = User(**(await self.session.get(uuid)))
+            user = User(**(await self.session.get(session_token)))
             sessions = await self.session.get(user.id)
-            sessions.remove(uuid)
+            sessions.remove(session_token)
             if sessions:
                 sessions = await self.session.set(user.id, sessions)
             else:
                 await self.session.delete(user.id)
-            await self.session.delete(uuid)
+            await self.session.delete(session_token)
         except:
             return
         self.session_user = None
@@ -159,13 +157,6 @@ class Mutation:
     upload_files = strawberry.field(resolver=files.upload_files)
 
 
-# @strawberry.type
-# class Subscription:
-#     post_creation_event = strawberry.subscription(
-#         resolver=subscriptions.post_creation_event
-#     )
-
-
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 graphql_app = GraphQLRouter(schema, context_getter=lambda: Ctx())
 
@@ -173,11 +164,18 @@ graphql_app = GraphQLRouter(schema, context_getter=lambda: Ctx())
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(os.getenv("DB_URL"))
+    # rtemanager = subscriptions.RTEManager(client.rtwalk_py)
+    # rtemanager.start_loop()
+    # app.state.rtemanager = rtemanager
+    await broadcast.connect()
     await init_beanie(
         database=client.rtwalk_py,
         document_models=[DBUser, UserSecret, DBForum, DBPost, DBComment],
     )
     yield
+    # rtemanager.stop()
+    await broadcast.disconnect()
+    client.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -190,7 +188,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+class WsInjectRTE:
+    def __init__(self, app) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "websocket":
+            await self.app(scope, receive, send)
+            return
+        scope["state"]["broadcast"] = broadcast
+
+        await self.app(scope, receive, send)
+
+
+app.add_middleware(WsInjectRTE)
+
+
 app.include_router(graphql_app, prefix="/api/v1")
+app.include_router(subscriptions.router, prefix="/rte/v1")
 
 app.mount(CDN_ROUTE, StaticFiles(directory="data"), name="cdn")
 
