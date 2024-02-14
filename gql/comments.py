@@ -10,7 +10,6 @@ from gql import CommentSort, Page
 from models.comment import Comment, DBComment
 from models.forum import DBForum
 from models.post import DBPost
-import ast
 
 
 @authenticated()

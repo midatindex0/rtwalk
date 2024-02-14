@@ -1,4 +1,3 @@
-import broadcaster
 import dotenv
 
 dotenv.load_dotenv()
@@ -14,24 +13,21 @@ from aiocache import Cache
 from aiocache.serializers import PickleSerializer
 from argon2 import PasswordHasher
 from beanie import init_beanie
+from broadcaster import Broadcast
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
-from fastapi import FastAPI, Request, WebSocket
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware import Middleware
 from strawberry.fastapi import BaseContext, GraphQLRouter
-from broadcaster import Broadcast
 
 from consts import CDN_ROUTE, ORIGINS
-from gql import comments, files, forums, posts, users, subscriptions
+from gql import comments, files, forums, posts, subscriptions, users
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
 from models.user import DBUser, User, UserSecret
-
 
 MAJOR_V = 0
 MINOR_v = 1

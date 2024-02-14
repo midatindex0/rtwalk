@@ -47,14 +47,16 @@ async def create_post(
             title=title,
             tags=tags,
             content=content,
-            attachments=[*map(lambda a: File(loc=a), attachments)]
-            if attachments
-            else None,
-            poll=DBPoll(
-                options=poll, results=[0] * len(poll), participants=[[]] * len(poll)
-            )
-            if poll
-            else None,
+            attachments=(
+                [*map(lambda a: File(loc=a), attachments)] if attachments else None
+            ),
+            poll=(
+                DBPoll(
+                    options=poll, results=[0] * len(poll), participants=[[]] * len(poll)
+                )
+                if poll
+                else None
+            ),
             poster_id=user.id,
             forum_id=forum.id,
             rolling=rolling,
