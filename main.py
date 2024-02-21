@@ -23,7 +23,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
 from consts import CDN_ROUTE, ORIGINS, RTE_URL, VC_URL
-from gql import comments, files, forums, posts, users, subscriptions
+from gql import comments, files, forums, posts, subscriptions, users
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost

@@ -1,13 +1,14 @@
 from __future__ import annotations
+
 from time import time
-from typing import List, Optional, Annotated
+from typing import Annotated, List, Optional
 
 import strawberry
 from beanie import Document, Link
 from beanie.odm.fields import PydanticObjectId
 from pydantic import Field
 
-from models.user import User, DBUser
+from models.user import DBUser, User
 
 
 @strawberry.type
