@@ -22,13 +22,8 @@ from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorClient
 from strawberry.fastapi import BaseContext, GraphQLRouter
 
-<<<<<<< HEAD
 from consts import CDN_ROUTE, ORIGINS, RTE_URL, VC_URL
 from gql import comments, files, forums, posts, users, subscriptions
-=======
-from consts import CDN_ROUTE, ORIGINS
-from gql import comments, files, forums, posts, subscriptions, users
->>>>>>> refs/remotes/origin/main
 from models.comment import DBComment
 from models.forum import DBForum
 from models.post import DBPost
