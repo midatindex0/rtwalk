@@ -25,7 +25,7 @@ from starlette.middleware import Middleware
 from strawberry.fastapi import BaseContext, GraphQLRouter
 from broadcaster import Broadcast
 
-from consts import CDN_ROUTE, ORIGINS
+from consts import CDN_ROUTE, ORIGINS, RTE_URL, VC_URL
 from gql import comments, files, forums, posts, users, subscriptions
 from models.comment import DBComment
 from models.forum import DBForum
@@ -116,11 +116,15 @@ class Version:
     major: int
     minor: int
     bug_fix: int
+    rte: str
+    vc: Optional[str]
 
     def __init__(self):
         self.major = MAJOR_V
         self.minor = MINOR_v
         self.bug_fix = BUG_FIX_V
+        self.rte = RTE_URL
+        self.vc = VC_URL
 
     @strawberry.field
     def version_string(self) -> str:
@@ -164,16 +168,12 @@ graphql_app = GraphQLRouter(schema, context_getter=lambda: Ctx())
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = AsyncIOMotorClient(os.getenv("DB_URL"))
-    # rtemanager = subscriptions.RTEManager(client.rtwalk_py)
-    # rtemanager.start_loop()
-    # app.state.rtemanager = rtemanager
     await broadcast.connect()
     await init_beanie(
         database=client.rtwalk_py,
         document_models=[DBUser, UserSecret, DBForum, DBPost, DBComment],
     )
     yield
-    # rtemanager.stop()
     await broadcast.disconnect()
     client.close()
 

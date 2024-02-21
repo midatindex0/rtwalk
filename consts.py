@@ -5,3 +5,5 @@ ORIGINS = [
     "https://dreamh.vercel.app",
 ]
 MAX_SESSIONS = 5
+RTE_URL = "ws://localhost:3758/rte/v1/"
+VC_URL = "ws://localhost:3001/ws"

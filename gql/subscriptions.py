@@ -17,7 +17,7 @@ async def rte_websocket(
 ):
     broadcast: Broadcast = ws.state.broadcast
     await ws.accept()
-    async with broadcast.subscribe(channel="rte") as subscriber:
+    async with broadcast.subscribe(channel="f") as subscriber:
         async for event in subscriber:
             msg = ast.literal_eval(event.message)
             if msg["event"] == "COMMENT_NEW" and comment_new:

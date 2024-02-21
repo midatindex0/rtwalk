@@ -10,7 +10,7 @@ from gql import CommentSort, Page
 from models.comment import Comment, DBComment
 from models.forum import DBForum
 from models.post import DBPost
-import ast
+from models.user import DBUser
 
 
 @authenticated()
@@ -27,8 +27,10 @@ async def create_commment(
             "Post does not exist",
             tp=CommentCreationErrorType.POST_NOT_FOUND,
         )
+    # Its fine because a post can't exist without a forum
+    # type: ignore
+    forum: DBForum = await DBForum.find_one(DBForum.id == post.forum_id)
     # TODO: Do this @ban check in query
-    forum = await DBForum.find_one(DBForum.id == post.forum_id)
     if user.id in forum.banned_members:
         raise CommentCreationError(
             "You are banned in this forum",
@@ -49,12 +51,14 @@ async def create_commment(
         commenter_id=user.id,
         reply_to=PydanticObjectId(reply_to) if reply_to else None,
         post_id=post.id,
+        forum_id=forum.id,
     )
+    comment.commenter = await DBUser.get(user.id)
     post.comment_count += 1
     await post.save()
     await comment.insert()
     await info.context.broadcast.publish(
-        channel="rte",
+        channel="f".format(forum.id),
         message=str({"item": comment.model_dump(), "event": "COMMENT_NEW"}),
     )
     return comment.gql()
@@ -81,17 +85,21 @@ async def get_comments(
     aggregation_pipe = []
     if ids:
         ids = [*map(PydanticObjectId, ids)]
-        comments = DBComment.find(In(DBComment.id, ids))
+        comments = DBComment.find(In(DBComment.id, ids), fetch_links=True)
     elif commenter_id:
         comments = DBComment.find(
-            DBComment.commenter_id == PydanticObjectId(commenter_id)
+            DBComment.commenter_id == PydanticObjectId(commenter_id), fetch_links=True
         )
     elif post_id:
-        comments = DBComment.find(DBComment.post_id == PydanticObjectId(post_id))
+        comments = DBComment.find(
+            DBComment.post_id == PydanticObjectId(post_id), fetch_links=True
+        )
     elif reply_to:
-        comments = DBComment.find(DBComment.reply_to == PydanticObjectId(reply_to))
+        comments = DBComment.find(
+            DBComment.reply_to == PydanticObjectId(reply_to), fetch_links=True
+        )
     else:
-        comments = DBComment.find_all()
+        comments = DBComment.find_all(fetch_links=True)
     # if search:
     #     aggregation_pipe.append(
     #         {
@@ -107,9 +115,9 @@ async def get_comments(
     #     )
     if isinstance(parent, bool):
         if parent:
-            comments = DBComment.find(DBComment.reply_to == None)
+            comments = DBComment.find(DBComment.reply_to == None, fetch_links=True)
         else:
-            comments = DBComment.find(DBComment.reply_to != None)
+            comments = DBComment.find(DBComment.reply_to != None, fetch_links=True)
     if created_after:
         aggregation_pipe.append({"$match": {"created_at": {"$gt": created_after}}})
     if created_before:
