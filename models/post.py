@@ -70,13 +70,17 @@ class DBPost(Document):
             tags=self.tags,
             content=self.content,
             attachments=self.attachments,
-            poll=Poll(
-                options=self.poll.options,
-                results=self.poll.results,
-                participants=list(map(lambda l: map(str, l), self.poll.participants)),
-            )
-            if self.poll
-            else None,
+            poll=(
+                Poll(
+                    options=self.poll.options,
+                    results=self.poll.results,
+                    participants=list(
+                        map(lambda l: map(str, l), self.poll.participants)
+                    ),
+                )
+                if self.poll
+                else None
+            ),
             comment_count=self.comment_count,
             participants=list(map(str, self.participants)),
             created_at=self.created_at,

@@ -1,8 +1,7 @@
-from broadcaster import Broadcast
-from fastapi import WebSocket
-from fastapi import APIRouter
 import ast
 
+from broadcaster import Broadcast
+from fastapi import APIRouter, WebSocket
 
 router = APIRouter()
 
